@@ -55,7 +55,7 @@ function AdminDashboard() {
           </button>
           <button
             className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700"
-            onClick={() => setActiveMenu("/admin-carwash-management")} 
+              onClick={() => navigate("/admin-carwash-management")}
           >
             <Eye className="mr-3 w-5 h-5" />
             Carwash Shops

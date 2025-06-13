@@ -38,6 +38,13 @@ function Login() {
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
+      const user = data.user; 
+      if (user.status === 'Banned') {
+        localStorage.setItem("user", JSON.stringify(user));
+        navigate("/banned");
+        return;
+      }
+
       const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.identifier);
       if (isEmail) {
         navigate("/user-dashboard");

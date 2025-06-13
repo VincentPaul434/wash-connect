@@ -79,7 +79,9 @@ function AdminUserManagement() {
           </button>
         </nav>
         <div className="px-8 pb-8 mt-auto">
-          <button className="flex items-center text-gray-700 hover:text-red-500">
+          <button className="flex items-center text-gray-700 hover:text-red-500"
+            onClick={() => window.location.href = "/login"}
+          >
             <LogOut className="mr-2 w-5 h-5" />
             Logout
           </button>
@@ -188,7 +190,16 @@ function AdminUserManagement() {
                         readOnly
                       />
                     </div>
-                    <button className="bg-red-500 hover:bg-red-600 text-white rounded-full py-2 mt-2 font-semibold transition">
+                    <button
+                      className="bg-red-500 hover:bg-red-600 text-white rounded-full py-2 mt-2 font-semibold transition"
+                      onClick={async () => {
+                        await fetch(`http://localhost:3000/api/admin/customers/ban/${c.user_id}`, {
+                          method: "PATCH",
+                        });
+                        fetchCustomers(); // Refresh list after banning
+                      }}
+                      disabled={c.status === "Banned"}
+                    >
                       Ban
                     </button>
                   </div>

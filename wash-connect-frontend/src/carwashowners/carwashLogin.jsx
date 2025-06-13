@@ -34,11 +34,11 @@ function CarwashLogin() {
         return;
       }
       // Save token and owner info
-      localStorage.setItem("ownerToken", data.token);
+      localStorage.setItem("token", data.token); 
       localStorage.setItem("carwashOwner", JSON.stringify(data.owner));
       setLoading(false);
-      // Redirect to carwash application registration page
-      navigate("/carwash-application-registration");
+      // Redirect to carwash dashboard page
+      navigate("/carwash-dashboard");
     } catch  {
       setError("Something went wrong. Please try again.");
       setLoading(false);

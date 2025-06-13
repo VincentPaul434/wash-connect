@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { FileText, Eye, Check, X, MapPin, Filter, Trophy, Users, Inbox, LogOut } from "lucide-react";
+import { Navigate } from "react-router";
 
 function AdminApplicationRequests() {
   const [applications, setApplications] = useState([]);
@@ -81,7 +82,7 @@ function AdminApplicationRequests() {
           </button>
           <button
             className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700"
-            onClick={() => window.location.href = "/admin-carwash-shops"}
+            onClick={() => window.location.href = "/admin-carwash-management"}
           >
             <Eye className="mr-3 w-5 h-5" />
             Carwash Shops
@@ -103,7 +104,9 @@ function AdminApplicationRequests() {
           </button>
         </nav>
         <div className="px-8 pb-8 mt-auto">
-          <button className="flex items-center text-gray-700 hover:text-red-500">
+          <button className="flex items-center text-gray-700 hover:text-red-500"
+            onClick={() => window.location.href = "/login"}
+          >
             <LogOut className="mr-2 w-5 h-5" />
             Logout
           </button>

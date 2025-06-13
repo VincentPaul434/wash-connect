@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Building2, MapPin, FileText, Upload, ArrowLeft } from "lucide-react";
 
@@ -14,6 +14,20 @@ function CarwashApplicationRegistration() {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Redirect if already registered (checks backend)
+  useEffect(() => {
+    const owner = JSON.parse(localStorage.getItem("carwashOwner"));
+    if (!owner || !owner.id) return;
+    // Check registration status from backend
+    fetch(`http://localhost:3000/api/carwash-applications/status/${owner.id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.registered) {
+          navigate("/carwash-dashboard");
+        }
+      })
+      .catch(() => {});
+  }, [navigate]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -21,7 +35,6 @@ function CarwashApplicationRegistration() {
     setSuccess("");
   };
 
- 
   const handleLogoChange = (e) => {
     setLogoFile(e.target.files[0]);
     setError("");
@@ -72,10 +85,13 @@ function CarwashApplicationRegistration() {
         setLoading(false);
         return;
       }
-      localStorage.setItem("carwashOwner", JSON.stringify(data.owner));
+      // Optionally update localStorage if backend returns owner info
+      if (data.owner) {
+        localStorage.setItem("carwashOwner", JSON.stringify(data.owner));
+      }
       setSuccess("Application submitted! Await admin approval.");
       setLoading(false);
-      setTimeout(() => navigate("/carwash-owner-dashboard"), 1800);
+      setTimeout(() => navigate("/carwash-dashboard"), 1800);
     } catch {
       setError("Something went wrong. Please try again.");
       setLoading(false);

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Trophy, Eye, Users, FileText, Inbox, LogOut, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 function AdminCarwashManagement() {
+  const navigate = useNavigate();
   const [shops, setShops] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -45,7 +47,7 @@ function AdminCarwashManagement() {
         <nav className="flex-1 px-4 py-6 space-y-2">
           <button
             className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700"
-            onClick={() => window.location.href = "/admin-dashboard"}
+            onClick={() => navigate("/admin-dashboard")}
           >
             <Trophy className="mr-3 w-5 h-5" />
             Earnings Dashboard
@@ -74,7 +76,9 @@ function AdminCarwashManagement() {
           </button>
         </nav>
         <div className="px-8 pb-8 mt-auto">
-          <button className="flex items-center text-gray-700 hover:text-red-500">
+          <button className="flex items-center text-gray-700 hover:text-red-500"
+            onClick={() => navigate("/login")}
+          >
             <LogOut className="mr-2 w-5 h-5" />
             Logout
           </button>
