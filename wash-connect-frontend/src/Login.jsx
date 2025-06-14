@@ -35,15 +35,15 @@ function Login() {
         alert(data.error || "Login failed");
         return;
       }
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-
-      const user = data.user; 
-      if (user.status === 'Banned') {
+      const user = data.user;
+      console.log("User status:", user.status); // Debug log
+      if (user.status && user.status.toLowerCase() === 'banned') {
         localStorage.setItem("user", JSON.stringify(user));
         navigate("/banned");
         return;
       }
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(user));
 
       const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.identifier);
       if (isEmail) {
