@@ -1,6 +1,5 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const pool = require('../db');
 
 const router = express.Router();
@@ -38,26 +37,22 @@ router.post('/login-carwash-owner', async (req, res) => {
             });
         }
 
-        const token = jwt.sign(
-            {
-                ownerId: owner.owner_id,
-                email: owner.owner_email,
-                role: 'owner'
-            },
-            process.env.JWT_SECRET,
-            { expiresIn: '8h' }
+        const [applications] = await pool.query(
+            'SELECT applicationId FROM carwash_applications WHERE ownerId = ?',
+            [owner.owner_id]
         );
-        
-        res.status(200).json({
-            success: true,
-            message: 'Login successful',
-            token,
+        const hasApplication = applications.length > 0;
+
+        res.json({
+            message: "Login successful",
             owner: {
                 id: owner.owner_id,
                 first_name: owner.owner_first_name,
                 last_name: owner.owner_last_name,
-                email: owner.owner_email
-            }
+                email: owner.owner_email,
+                // ...other fields as needed
+            },
+            hasApplication
         });
 
     } catch (error) {

@@ -4,42 +4,20 @@ const router = express.Router();
 
 // Create a booking
 router.post('/bookings', async (req, res) => {
-    const {
-        user_id,
-        applicationId,
-        service_name,
-        schedule_date,
-        address,
-        message,
-        personnelId
-    } = req.body;
-
-    // Check for existing active booking
+    const { user_id, applicationId, service_name, schedule_date, address, message, personnelId } = req.body;
+    if (!user_id || !applicationId || !service_name || !schedule_date || !address || !personnelId) {
+        return res.status(400).json({ error: "Missing required fields." });
+    }
     try {
-        const [existing] = await pool.query(
-            "SELECT * FROM bookings WHERE user_id = ? AND status NOT IN ('Declined', 'Done')",
-            [user_id]
-        );
-        if (existing.length > 0) {
-            return res.status(400).json({ error: "You already have an active booking." });
-        }
-
-        if (!user_id || !applicationId || !service_name || !schedule_date || !address) {
-            return res.status(400).json({ error: 'Missing required fields' });
-        }
-
         const [result] = await pool.query(
-            `INSERT INTO bookings (user_id, applicationId, service_name, schedule_date, address, message, personnelId)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [user_id, applicationId, service_name, schedule_date, address, message || null, personnelId || null]
+            `INSERT INTO bookings (user_id, applicationId, service_name, schedule_date, address, message, personnelId, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending')`,
+            [user_id, applicationId, service_name, schedule_date, address, message, personnelId]
         );
-        res.status(201).json({
-            message: 'Booking submitted successfully',
-            appointment_id: result.insertId,
-            status: 'Pending'
-        });
+        res.status(201).json({ message: "Booking created", appointment_id: result.insertId });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to submit booking', details: error.message });
+        console.error('Error creating booking:', error);
+        res.status(500).json({ error: 'Failed to create booking', details: error.message });
     }
 });
 
@@ -197,5 +175,18 @@ router.patch('/bookings/payment/:appointmentId', async (req, res) => {
     }
 });
 
+router.get('/bookings/by-application/:id', async (req, res) => {
+    const applicationId = req.params.id;
+    try {
+        const [bookings] = await pool.query(
+            'SELECT * FROM bookings WHERE applicationId = ?',
+            [applicationId]
+        );
+        res.json(bookings);
+    } catch (error) {
+        console.error('Error fetching bookings:', error);
+        res.status(500).json({ error: 'Failed to fetch bookings', details: error.message });
+    }
+});
 
-module.exports = router;s
+module.exports = router;
