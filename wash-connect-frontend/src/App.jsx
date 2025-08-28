@@ -25,6 +25,7 @@ import PersonnelList from './carwashowners/PersonnelList';
 import AddEmployee from './carwashowners/AddEmployee';
 import PersonnelAssign from './carwashowners/personnelAssign';
 import Bookings from './carwashowners/booking';
+import AwaitingApproval from './carwashowners/AwaitingApproval';
 
 function App() {
     return (
@@ -53,6 +54,7 @@ function App() {
                 <Route path="/add-employee" element={<AddEmployee />} />
                 <Route path="/personnel-assign" element={<PersonnelAssign />} />
                 <Route path="/bookings" element={<Bookings />} />
+                <Route path="/awaiting-approval" element={<AwaitingApproval />} />
 
                 {/* Admin Routes */}
                 <Route path="/admin-register" element={<AdminRegister />} />
