@@ -49,18 +49,20 @@ router.get('/carwash-applications/status/:ownerId', async (req, res) => {
     const { ownerId } = req.params;
     try {
         const [rows] = await pool.query(
-            'SELECT applicationId FROM carwash_applications WHERE ownerId = ? LIMIT 1',
+            'SELECT applicationId, status FROM carwash_applications WHERE ownerId = ? ORDER BY applicationId DESC LIMIT 1',
             [ownerId]
         );
         if (rows.length > 0) {
-            return res.json({ registered: true });
+            // Return the status (e.g. "Pending", "Approved", "Rejected")
+            return res.json({ registered: true, status: rows[0].status });
         } else {
-            return res.json({ registered: false });
+            return res.json({ registered: false, status: null });
         }
     } catch (error) {
         res.status(500).json({ error: 'Failed to check registration status', details: error.message });
     }
 });
+
 
 router.get('/carwash-applications/by-owner/:ownerId', async (req, res) => {
   const { ownerId } = req.params;

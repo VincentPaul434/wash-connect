@@ -11,27 +11,28 @@ router.post('/bookings', async (req, res) => {
         schedule_date,
         address,
         message,
-        personnelId
+        personnelId,
+        price // <-- add this
     } = req.body;
 
     // Check for existing active booking
     try {
         const [existing] = await pool.query(
-            "SELECT * FROM bookings WHERE user_id = ? AND status NOT IN ('Declined', 'Done')",
+            "SELECT * FROM bookings WHERE user_id = ? AND status NOT IN ('Declined', 'Done', 'Cancelled')",
             [user_id]
         );
         if (existing.length > 0) {
             return res.status(400).json({ error: "You already have an active booking." });
         }
 
-        if (!user_id || !applicationId || !service_name || !schedule_date || !address) {
+        if (!user_id || !applicationId || !service_name || !schedule_date || !address || price === undefined) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
         const [result] = await pool.query(
-            `INSERT INTO bookings (user_id, applicationId, service_name, schedule_date, address, message, personnelId)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [user_id, applicationId, service_name, schedule_date, address, message || null, personnelId || null]
+            `INSERT INTO bookings (user_id, applicationId, service_name, schedule_date, address, message, personnelId, price)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [user_id, applicationId, service_name, schedule_date, address, message || null, personnelId || null, price] // <-- add price here
         );
         res.status(201).json({
             message: 'Booking submitted successfully',
@@ -141,11 +142,15 @@ router.get('/bookings/with-personnel/:appointmentId', async (req, res) => {
                 p.last_name AS personnel_last_name,
                 p.address AS personnel_address,
                 p.email AS personnel_email,
-                p.avatar AS personnel_avatar
+                p.avatar AS personnel_avatar,
+                COALESCE(SUM(pay.amount), 0) AS amount_paid
             FROM bookings b
             LEFT JOIN users u ON b.user_id = u.user_id
             LEFT JOIN personnel p ON b.personnelId = p.personnelId
-            WHERE b.appointment_id = ?`,
+            LEFT JOIN payments pay ON b.appointment_id = pay.appointment_id
+            WHERE b.appointment_id = ?
+            GROUP BY b.appointment_id
+            `,
             [appointmentId]
         );
         if (rows.length > 0) {
@@ -197,5 +202,40 @@ router.patch('/bookings/payment/:appointmentId', async (req, res) => {
     }
 });
 
+router.post('/bookings/payment/:appointmentId', async (req, res) => {
+    const { appointmentId } = req.params;
+    const { amount, method, receipt_url, status } = req.body;
 
-module.exports = router;s
+    if (!amount || !method) {
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
+    try {
+        await pool.query(
+            `INSERT INTO payments (appointment_id, amount, method, receipt_url, status)
+             VALUES (?, ?, ?, ?, ?)`,
+            [appointmentId, amount, method, receipt_url || null, status || 'Pending']
+        );
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to record payment', details: error.message });
+    }
+});
+
+// Cancel a booking
+router.patch('/bookings/cancel/:appointmentId', async (req, res) => {
+    const { appointmentId } = req.params;
+    try {
+        const [result] = await pool.query(
+            "UPDATE bookings SET status = 'Cancelled' WHERE appointment_id = ?",
+            [appointmentId]
+        );
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Booking not found' });
+        }
+        res.json({ success: true, message: 'Booking cancelled.' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to cancel booking', details: error.message });
+    }
+});
+
+module.exports = router;
