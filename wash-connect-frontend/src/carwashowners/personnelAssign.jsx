@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { FaUser, FaCalendarAlt, FaUsers, FaSignOutAlt } from "react-icons/fa";
 
 function PersonnelAssign() {
   const navigate = useNavigate();
@@ -34,6 +35,12 @@ function PersonnelAssign() {
     navigate("/personnel-list");
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("carwashOwner");
+    localStorage.removeItem("token");
+    navigate("/carwash-login");
+  };
+
   if (!personnel) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
@@ -51,40 +58,81 @@ function PersonnelAssign() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-semibold mb-6">
-          Assign {personnel.name} to Appointment
-        </h2>
-        <select
-          className="border rounded px-2 py-1 w-full mb-4"
-          value={selectedAppointmentId}
-          onChange={e => setSelectedAppointmentId(e.target.value)}
-        >
-          <option value="">Select Appointment</option>
-          {approvedCarwashes.map(cw =>
-            cw.appointments?.map(appt => (
-              <option key={appt.appointmentId} value={appt.appointmentId}>
-                {cw.carwashName} — {appt.userName} ({appt.userEmail})
-              </option>
-            ))
-          )}
-        </select>
-        <div className="flex gap-2">
-          <button
-            className="flex-1 bg-gray-200 rounded px-3 py-1"
+    <div className="min-h-screen flex bg-gray-50">
+      {/* Sidebar */}
+      <div className="w-64 bg-white border-r border-gray-200 flex flex-col min-h-screen">
+        <div className="flex items-center px-8 py-8 border-b border-gray-100">
+          <span className="text-3xl font-bold text-blue-600">WashConnect</span>
+        </div>
+        <nav className="flex-1 px-4 py-6 space-y-2">
+          <div
+            className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
+            onClick={() => navigate("/carwash-dashboard")}
+          >
+            <FaUser className="mr-3 w-5 h-5" />
+            Dashboard
+          </div>
+          <div
+            className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
             onClick={() => navigate("/personnel-list")}
-            disabled={assigning}
           >
-            Cancel
-          </button>
-          <button
-            className="flex-1 bg-blue-500 text-white rounded px-3 py-1"
-            onClick={handleAssign}
-            disabled={assigning || !selectedAppointmentId}
+            <FaUsers className="mr-3 w-5 h-5" />
+            Personnel
+          </div>
+          <div
+            className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
+            onClick={() => navigate("/appointments")}
           >
-            {assigning ? "Assigning..." : "Assign"}
-          </button>
+            <FaCalendarAlt className="mr-3 w-5 h-5" />
+            Appointments
+          </div>
+          <div className="mt-auto px-4 pt-8">
+            <div
+              className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
+              onClick={handleLogout}
+            >
+              <FaSignOutAlt className="mr-3 w-5 h-5" />
+              Log Out
+            </div>
+          </div>
+        </nav>
+      </div>
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col items-center justify-center">
+        <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md mt-12">
+          <h2 className="text-2xl font-semibold mb-6">
+            Assign {personnel.name} to Appointment
+          </h2>
+          <select
+            className="border rounded px-2 py-1 w-full mb-4"
+            value={selectedAppointmentId}
+            onChange={e => setSelectedAppointmentId(e.target.value)}
+          >
+            <option value="">Select Appointment</option>
+            {approvedCarwashes.map(cw =>
+              cw.appointments?.map(appt => (
+                <option key={appt.appointmentId} value={appt.appointmentId}>
+                  {cw.carwashName} — {appt.userName} ({appt.userEmail})
+                </option>
+              ))
+            )}
+          </select>
+          <div className="flex gap-2">
+            <button
+              className="flex-1 bg-gray-200 rounded px-3 py-1"
+              onClick={() => navigate("/personnel-list")}
+              disabled={assigning}
+            >
+              Cancel
+            </button>
+            <button
+              className="flex-1 bg-blue-500 text-white rounded px-3 py-1"
+              onClick={handleAssign}
+              disabled={assigning || !selectedAppointmentId}
+            >
+              {assigning ? "Assigning..." : "Assign"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

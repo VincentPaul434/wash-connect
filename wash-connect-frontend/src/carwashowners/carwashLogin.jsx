@@ -37,8 +37,18 @@ function CarwashLogin() {
       localStorage.setItem("token", data.token); 
       localStorage.setItem("carwashOwner", JSON.stringify(data.owner));
       setLoading(false);
-      // Redirect to carwash dashboard page
-      navigate("/carwash-dashboard");
+
+      // Check registration status
+      const statusRes = await fetch(`http://localhost:3000/api/carwash-applications/status/${data.owner.id}`);
+      const statusData = await statusRes.json();
+      const status = (statusData.status || "").toLowerCase();
+      if (status === "approved") {
+        navigate("/carwash-dashboard");
+      } else if (status === "pending") {
+        navigate("/awaiting-approval");
+      } else {
+        navigate("/carwash-application-registration");
+      }
     } catch  {
       setError("Something went wrong. Please try again.");
       setLoading(false);

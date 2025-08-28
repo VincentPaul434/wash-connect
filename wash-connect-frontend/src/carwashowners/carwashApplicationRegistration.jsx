@@ -91,7 +91,7 @@ function CarwashApplicationRegistration() {
       }
       setSuccess("Application submitted! Await admin approval.");
       setLoading(false);
-      setTimeout(() => navigate("/carwash-dashboard"), 1800);
+      setTimeout(() => navigate("/awaiting-approval"), 1200);
     } catch {
       setError("Something went wrong. Please try again.");
       setLoading(false);
