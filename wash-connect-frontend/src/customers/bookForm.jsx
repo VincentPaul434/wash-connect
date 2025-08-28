@@ -6,22 +6,27 @@ const services = [
   {
     name: "Basic Car Wash",
     img: "https://images.pexels.com/photos/372810/pexels-photo-372810.jpeg?auto=compress&w=400&h=300&fit=crop",
+    price: 400,
   },
   {
     name: "Full Detailing",
     img: "https://images.pexels.com/photos/3806273/pexels-photo-3806273.jpeg?auto=compress&w=400&h=300&fit=crop",
+    price: 1000,
   },
   {
     name: "Underwash",
     img: "https://images.pexels.com/photos/48889/pexels-photo-48889.jpeg?auto=compress&w=400&h=300&fit=crop",
+    price: 200,
   },
   {
     name: "Ceramic Coating",
     img: "https://images.pexels.com/photos/170782/pexels-photo-170782.jpeg?auto=compress&w=400&h=300&fit=crop",
+    price: 1000,
   },
   {
     name: "Basic Motowash",
     img: "https://images.pexels.com/photos/372810/pexels-photo-372810.jpeg?auto=compress&w=400&h=300&fit=crop",
+    price: 50,
   },
 ];
 
@@ -31,6 +36,17 @@ function BookForm() {
   const selectedServiceName = location.state?.serviceName || services[0].name;
   const carwashName = location.state?.carwashName || "Carwash";
   const applicationId = location.state?.applicationId || "";
+
+  // Pre-fill form fields from location.state if available
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      firstName: location.state?.firstName || "",
+      lastName: location.state?.lastName || "",
+      email: location.state?.email || "",
+      address: location.state?.address || "",
+    }));
+  }, [location.state]);
 
   const [selectedIdx, setSelectedIdx] = useState(
     services.findIndex((s) => s.name === selectedServiceName)
@@ -71,7 +87,9 @@ function BookForm() {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     const user_id = user.id || user.user_id || "";
 
-    const service_name = services[selectedIdx].name;
+    const service = services[selectedIdx];
+    const service_name = service.name;
+    const price = service.price; // Add this line
     const schedule_date = form.date;
     const address = form.address;
     const message = form.message;
@@ -94,13 +112,15 @@ function BookForm() {
           address,
           message,
           personnelId: selectedPersonnelId,
+          price, // Pass the price to backend
         }),
       });
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || "Failed to submit booking.");
       }
-      navigate(`/booking-confirmation/${appointment_id}`);
+      // Navigate to booking confirmation with appointment_id from API response
+      navigate("/booking-confirmation", { state: { appointment_id: data.appointment_id } });
     } catch (error) {
       alert(error.message);
     } finally {
@@ -210,7 +230,7 @@ function BookForm() {
                 >
                   {service.name}
                 </span>
-              </div>
+              </div> 
             ))}
             <button
               className="p-1 rounded-full hover:bg-gray-100"

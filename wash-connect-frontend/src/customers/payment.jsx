@@ -22,6 +22,7 @@ const PAYMENT_METHODS = [
   // Booking details
   const [booking, setBooking] = useState(null);
   const [subtotal, setSubtotal] = useState(0);
+  const [previousPayments, setPreviousPayments] = useState(0);
 
   // Fetch booking details to get the subtotal
   useEffect(() => {
@@ -30,14 +31,14 @@ const PAYMENT_METHODS = [
         .then(res => res.json())
         .then(data => {
           setBooking(data);
-          // Use booking.price if available, else fallback to a default
           setSubtotal(data.price || 0);
+          setPreviousPayments(data.amount_paid || 0);
         });
     }
   }, [appointment_id]);
 
   // Calculate remaining balance
-  const remaining = subtotal - (parseFloat(amount) || 0);
+  const remaining = subtotal - previousPayments - (parseFloat(amount) || 0);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -155,12 +156,15 @@ const PAYMENT_METHODS = [
           <div className="bg-blue-50 rounded-lg p-4 flex items-center gap-3">
             <span className="text-blue-500 text-2xl">💰</span>
             <div>
-              <div className="text-sm text-gray-600">Remaining Balance (auto-calculated):</div>
+              <div className="text-sm text-gray-600">
+                Remaining Balance for <span className="font-semibold">{booking.service_name}</span>:
+              </div>
               <div className="text-2xl font-bold text-blue-700">
                 ₱{remaining > 0 ? remaining.toLocaleString() : 0}
               </div>
               <div className="text-xs text-gray-500">
-                Subtotal: ₱{subtotal.toLocaleString()}
+                Subtotal: ₱{subtotal.toLocaleString()}<br />
+                Paid: ₱{previousPayments.toLocaleString()}
               </div>
             </div>
           </div>

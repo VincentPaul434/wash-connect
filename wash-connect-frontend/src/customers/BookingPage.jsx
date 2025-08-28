@@ -58,7 +58,7 @@ function BookingPage() {
 				.then((res) => res.json())
 				.then((bookings) => {
 					const active = bookings.find(
-						(b) => b.status !== "Declined" && b.status !== "Done"
+						(b) => b.status !== "Declined" && b.status !== "Done" && b.status !== "Cancelled"
 					);
 					setHasActiveBooking(!!active);
 					setActiveBooking(active || null);
@@ -126,7 +126,7 @@ function BookingPage() {
 							if (activeBooking) {
 								navigate("/booking-confirmation", { state: { appointment_id: activeBooking.appointment_id } });
 							} else {
-								alert("No active appointment found.");
+								navigate("/booking-confirmation", { state: { appointment_id: null } });
 							}
 						}}
 					>
@@ -251,15 +251,20 @@ function BookingPage() {
 								</div>
 								<button
 									className="border border-blue-400 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 text-xs"
-									onClick={() =>
+									onClick={() => {
+										const user = JSON.parse(localStorage.getItem("user")) || {};
 										navigate("/book-form", {
 											state: {
 												applicationId: applicationId,
 												serviceName: service.name,
 												carwashName: location.state?.carwashName || "Carwash",
+												firstName: user.first_name || "",
+												lastName: user.last_name || "",
+												email: user.email || "",
+												address: user.address || "",
 											},
-										})
-									}
+										});
+									}}
 									disabled={hasActiveBooking}
 								>
 									Book Now

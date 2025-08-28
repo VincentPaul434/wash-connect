@@ -29,6 +29,8 @@ function BookingConfirmation() {
   // console.log("appointment_id:", appointment_id);
 
   const [booking, setBooking] = useState(null);
+  const [canceling, setCanceling] = useState(false);
+  const [cancelSuccess, setCancelSuccess] = useState(false);
 
   // Fetch booking details
   useEffect(() => {
@@ -78,27 +80,19 @@ function BookingConfirmation() {
     const [submitting, setSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
   
-    if (!appointment_id) {
+    if (!appointment_id || !booking) {
       return (
         <div className="flex items-center justify-center min-h-screen">
           <div className="bg-white p-8 rounded-lg shadow-md text-center">
-            <h2 className="text-2xl font-semibold mb-4">Booking Not Found</h2>
-            <p className="mb-6">No appointment ID found. Cannot show booking confirmation.</p>
+            <h2 className="text-2xl font-semibold mb-4">No Appointments Booked</h2>
+            <p className="mb-6">You currently have no active appointments. Book a service to get started!</p>
             <button
-              onClick={() => navigate("/user-dashboard")}
+              onClick={() => navigate("/book")}
               className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
             >
-              Go to Dashboard
+              Book Now
             </button>
           </div>
-        </div>
-      );
-    }
-  
-    if (!booking) {
-      return (
-        <div className="flex items-center justify-center min-h-screen">
-          Loading booking details...
         </div>
       );
     }
@@ -130,6 +124,24 @@ function BookingConfirmation() {
       alert("Failed to submit rating. Please try again.");
     }
     setSubmitting(false);
+  };
+
+  const handleCancelBooking = async () => {
+    if (!appointment_id) return;
+    if (!window.confirm("Are you sure you want to cancel this booking?")) return;
+    setCanceling(true);
+    try {
+      const res = await fetch(`http://localhost:3000/api/bookings/cancel/${appointment_id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) throw new Error("Failed to cancel booking.");
+      setCancelSuccess(true);
+      setBooking((prev) => ({ ...prev, status: "Cancelled" }));
+    } catch {
+      alert("Failed to cancel booking.");
+    }
+    setCanceling(false);
   };
 
   return (
@@ -293,8 +305,12 @@ function BookingConfirmation() {
                   <button className="flex-1 bg-blue-100 text-blue-700 px-3 py-2 rounded font-semibold hover:bg-blue-200 text-sm">
                     Reschedule
                   </button>
-                  <button className="flex-1 bg-red-100 text-red-700 px-3 py-2 rounded font-semibold hover:bg-red-200 text-sm">
-                    Cancel Booking
+                  <button
+                    className="flex-1 bg-red-100 text-red-700 px-3 py-2 rounded font-semibold hover:bg-red-200 text-sm"
+                    onClick={handleCancelBooking}
+                    disabled={canceling || booking.status === "Declined"}
+                  >
+                    {canceling ? "Cancelling..." : booking.status === "Declined" ? "Booking Cancelled" : "Cancel Booking"}
                   </button>
                 </div>
               </div>
@@ -409,9 +425,18 @@ function BookingConfirmation() {
               >
                 Pay Now 
               </button>
-              <button className="w-full bg-gray-200 text-gray-700 py-2 rounded font-semibold hover:bg-gray-300">
-                Request Cancellation
+              <button
+                className="w-full bg-gray-200 text-gray-700 py-2 rounded font-semibold hover:bg-gray-300"
+                onClick={handleCancelBooking}
+                disabled={canceling || booking.status === "Declined"}
+              >
+                {canceling ? "Cancelling..." : booking.status === "Declined" ? "Booking Cancelled" : "Request Cancellation"}
               </button>
+              {cancelSuccess && (
+                <div className="text-red-600 mt-2 font-semibold">
+                  Booking has been cancelled.
+                </div>
+              )}
               <div className="mt-4 bg-blue-50 rounded p-2 flex items-center gap-2">
                 <img
                   src="https://cdn-icons-png.flaticon.com/512/616/616489.png"

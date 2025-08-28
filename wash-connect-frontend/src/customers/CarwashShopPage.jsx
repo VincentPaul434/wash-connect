@@ -10,12 +10,12 @@ import {
 } from "react-icons/fa"
 import { Search, MapPin } from "lucide-react"
 
-const MAIN_LOCATIONS = ["Cordova", "Cebu City", "Mandaue", "Lapu-Lapu"]
+const MAIN_LOCATIONS = ["All", "Cordova", "Cebu City", "Mandaue", "Lapu-Lapu"]
 
 function CarwashShopPage() {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedLocation, setSelectedLocation] = useState("Cordova")
+  const [selectedLocation, setSelectedLocation] = useState("All")
   const [shops, setShops] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeBooking, setActiveBooking] = useState(null) // <-- update to useState(null)
@@ -30,17 +30,18 @@ function CarwashShopPage() {
   
   useEffect(() => {
     const fetchShops = async () => {
-      setLoading(true)
+      setLoading(true);
       try {
-        const res = await fetch("http://localhost:3000/api/admin/applications")
-        const data = await res.json()
-        setShops(data.filter(shop => shop.status === "Approved"))
+        // Only fetch approved carwash shops
+        const res = await fetch("http://localhost:3000/api/carwash-applications/approved");
+        const data = await res.json();
+        setShops(data);
       } catch {
-        setShops([])
+        setShops([]);
       }
-      setLoading(false)
-    }
-    fetchShops()
+      setLoading(false);
+    };
+    fetchShops();
   }, [])
 
   // Fetch user's active booking
@@ -61,9 +62,11 @@ function CarwashShopPage() {
 
   // Filter by location and search query
   const filteredShops = shops.filter(shop => {
+    if (selectedLocation === "All") {
+      return true;
+    }
     if (selectedLocation === "Other") {
-      // Show shops not in main locations
-      return !MAIN_LOCATIONS.some(loc =>
+      return !MAIN_LOCATIONS.slice(1).some(loc =>
         shop.location.toLowerCase().includes(loc.toLowerCase())
       )
     } else {
@@ -179,6 +182,7 @@ function CarwashShopPage() {
                 onChange={(e) => setSelectedLocation(e.target.value)}
                 className="bg-white border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
               >
+                <option value="All">All</option>
                 <option value="Cordova">Cordova</option>
                 <option value="Cebu City">Cebu City</option>
                 <option value="Mandaue">Mandaue</option>
@@ -227,10 +231,18 @@ function CarwashShopPage() {
                     style={{ width: 180, height: 180 }} // Adjust image box size
                   >
                     <img
-                      src={shop.logoUrl || "/default-logo.png"}
+                      src={
+                        shop.logo
+                          ? `http://localhost:3000/uploads/logos/${shop.logo}`
+                          : "/default-logo.png"
+                      }
                       alt="Logo"
                       className="w-full h-full object-contain"
-                      onError={e => { e.target.src = "/default-logo.png"; }}
+                      onError={e => {
+                        if (e.target.src !== window.location.origin + "/default-logo.png") {
+                          e.target.src = "/default-logo.png";
+                        }
+                      }}
                     />
                   </div>
                   <div className="text-base font-semibold text-center text-gray-900 mb-2">{shop.carwashName}</div>

@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-
 import {
   User,
   Inbox,
@@ -13,16 +12,11 @@ import {
   Video,
   MessageCircle,
   MoreVertical,
-  MapPin,
-  Navigation,
 } from "lucide-react"
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"
-import "leaflet/dist/leaflet.css"
 import { FaEnvelope, FaUser, FaStar, FaHeart } from "react-icons/fa"
 
 function UserDashboard() {
   const navigate = useNavigate()
-  const [selectedDate, setSelectedDate] = useState("April 2024")
   const [userInfo, setUserInfo] = useState({
     firstName: "",
     lastName: "",
@@ -33,7 +27,6 @@ function UserDashboard() {
     gender: "",
   })
   const [profilePic, setProfilePic] = useState(null)
-  const [approvedCarwashLocations, setApprovedCarwashLocations] = useState([])
   const [activeBooking, setActiveBooking] = useState(null)
   const [bookings, setBookings] = useState([])
 
@@ -60,13 +53,6 @@ function UserDashboard() {
     }
   }, [navigate])
 
-  // Fetch approved carwash services from backend
-  useEffect(() => {
-    fetch("/api/admin/approved-carwash")
-      .then((res) => res.json())
-      .then((data) => setApprovedCarwashLocations(data))
-      .catch(() => setApprovedCarwashLocations([]))
-  }, [])
   // Fetch user's active booking and all bookings
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user") || "{}")
@@ -75,12 +61,16 @@ function UserDashboard() {
       fetch(`http://localhost:3000/api/bookings/customers/${userId}`)
         .then((res) => res.json())
         .then((bookingsData) => {
-          // Find the latest or active booking (not Declined or Done)
+          // Exclude Declined, Done, and Cancelled bookings
           const latest = bookingsData.find(
-            (b) => b.status !== "Declined" && b.status !== "Done"
+            (b) => b.status !== "Declined" && b.status !== "Done" && b.status !== "Cancelled"
           )
           setActiveBooking(latest)
-          setBookings(bookingsData || [])
+          setBookings(
+            (bookingsData || []).filter(
+              (b) => b.status !== "Declined" && b.status !== "Done" && b.status !== "Cancelled"
+            )
+          )
         })
         .catch(() => {
           setActiveBooking(null)
@@ -111,9 +101,9 @@ function UserDashboard() {
   }
 
   return (
-    <div className="min-h-screen flex bg-[#c7f1ff]">
+    <div className="min-h-screen flex bg-gradient-to-br from-cyan-50 to-blue-100">
       {/* Sidebar */}
-      <div className="w-72 bg-white border-r border-gray-200 flex flex-col min-h-screen">
+      <div className="w-72 bg-white border-r border-gray-200 flex flex-col min-h-screen shadow-lg">
         <div className="flex items-center px-8 py-8 border-b border-gray-100">
           <span className="text-3xl" style={{ fontFamily: "Brush Script MT, cursive" }}>
             <span className="text-cyan-500">Wash</span>{" "}
@@ -127,7 +117,7 @@ function UserDashboard() {
             Inbox
             <span className="ml-auto bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-sm">0</span>
           </div>
-          <div className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer">
+          <div className="flex items-center w-full px-4 py-3 rounded-lg bg-cyan-100 text-cyan-700 font-semibold cursor-pointer">
             <FaUser className="mr-3 w-5 h-5" />
             Account
           </div>
@@ -138,7 +128,7 @@ function UserDashboard() {
             Carwash Shops
           </div>
           <div className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer" 
-          onClick={() => navigate("/book")}
+            onClick={() => navigate("/book")}
           >
             <FaHeart className="mr-3 w-5 h-5" />
             Bookings
@@ -168,55 +158,45 @@ function UserDashboard() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
-        <header className="flex items-center justify-between px-8 py-6 bg-[#a8d6ea] border-b border-gray-200">
+        <header className="flex items-center justify-between px-8 py-6 bg-[#a8d6ea] border-b border-gray-200 shadow-sm">
           <div className="flex items-center">
-            <span className="text-2xl font-bold">Accounts</span>
+            <span className="text-2xl font-bold">My Account</span>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm">{userInfo.firstName || "User"}</span>
-            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+            <span className="text-sm font-medium text-gray-700">{userInfo.firstName || "User"}</span>
+            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center border border-cyan-200">
               <FaUser className="w-5 h-5 text-blue-400" />
             </div>
           </div>
         </header>
 
         {/* Content */}
-        <div className="flex-1 p-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left Column */}
-            <div className="space-y-6">
-              {/* User Profile Card with Upload */}
-              <div className="bg-white rounded-lg p-6 shadow-lg">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="relative">
-                      <img
-                        src={profilePic || "/placeholder.svg"}
-                        alt="Profile"
-                        className="w-16 h-16 rounded-full object-cover border"
-                        style={{ borderColor: "#87A5B7", borderWidth: "2px", borderStyle: "solid" }}
-                      />
-                      <label className="absolute bottom-0 right-0 bg-blue-500 rounded-full p-1 cursor-pointer hover:bg-blue-600">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handleProfilePicChange}
-                        />
-                        <FaUser className="w-4 h-4 text-white" />
-                      </label>
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-semibold text-gray-900">
-                        {userInfo.firstName} {userInfo.lastName}
-                      </h2>
-                      <p className="text-gray-600">Customer</p>
-                    </div>
-                  </div>
-                  <MoreVertical className="w-5 h-5 text-gray-400" />
+        <div className="flex-1 p-10 bg-gradient-to-br from-white to-blue-50">
+          <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Profile Card */}
+            <div className="col-span-1">
+              <div className="bg-white rounded-2xl p-8 shadow-lg flex flex-col items-center">
+                <div className="relative mb-4">
+                  <img
+                    src={profilePic || "/placeholder.svg"}
+                    alt="Profile"
+                    className="w-24 h-24 rounded-full object-cover border-4 border-cyan-200"
+                  />
+                  <label className="absolute bottom-0 right-0 bg-blue-500 rounded-full p-2 cursor-pointer hover:bg-blue-600 border-2 border-white">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleProfilePicChange}
+                    />
+                    <FaUser className="w-4 h-4 text-white" />
+                  </label>
                 </div>
-
-                <div className="flex space-x-4 mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">
+                  {userInfo.firstName} {userInfo.lastName}
+                </h2>
+                <p className="text-gray-500 mb-2">Customer</p>
+                <div className="flex space-x-2 mb-4">
                   <button className="p-2 bg-gray-100 rounded-full hover:bg-gray-200">
                     <Mail className="w-5 h-5 text-gray-600" />
                   </button>
@@ -230,33 +210,84 @@ function UserDashboard() {
                     <MessageCircle className="w-5 h-5 text-gray-600" />
                   </button>
                 </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium text-gray-900">Time Slots</h3>
-                    <div className="flex items-center space-x-2 mt-2">
-                      <input
-                        type="text"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        className="border border-gray-300 rounded px-3 py-1 text-sm"
-                      />
-                      <Calendar className="w-4 h-4 text-gray-400" />
-                    </div>
+                <div className="w-full mt-4">
+                  <div className="mb-2">
+                    <span className="block text-xs text-gray-500">Email</span>
+                    <span className="block font-medium text-gray-800">{userInfo.email}</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-600">Bookings</span>
-                    <span className="bg-gray-800 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
-                      {bookings.length}
-                    </span>
+                  <div className="mb-2">
+                    <span className="block text-xs text-gray-500">Contact</span>
+                    <span className="block font-medium text-gray-800">{userInfo.contactNumber}</span>
+                  </div>
+                  <div className="mb-2">
+                    <span className="block text-xs text-gray-500">Address</span>
+                    <span className="block font-medium text-gray-800">{userInfo.address}</span>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Detailed Information */}
-              <div className="bg-white rounded-lg p-6 shadow-lg">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Detailed Information</h3>
+            {/* Bookings Section */}
+            <div className="col-span-2 flex flex-col gap-8">
+              <div className="bg-white rounded-2xl p-8 shadow-lg">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xl font-semibold">My Bookings</span>
+                    <div className="w-7 h-7 bg-cyan-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-sm">{bookings.length}</span>
+                    </div>
+                  </div>
+                  <button
+                    className="bg-cyan-500 text-white px-6 py-2 rounded-lg hover:bg-cyan-600 transition-colors font-semibold"
+                    onClick={() => navigate("/book")}
+                  >
+                    Book Now
+                  </button>
+                </div>
                 <div className="space-y-4">
+                  {bookings.length === 0 ? (
+                    <div className="text-gray-500 text-center py-8">No bookings yet.</div>
+                  ) : (
+                    bookings.map((booking) => (
+                      <div key={booking.id} className="border border-gray-100 rounded-xl p-5 bg-cyan-50 flex flex-col md:flex-row items-center gap-4 shadow-sm">
+                        <img
+                          src={booking.image || "/placeholder.svg"}
+                          alt={booking.title}
+                          className="w-20 h-20 rounded-lg object-cover border border-cyan-200"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-semibold text-gray-900">{booking.title || booking.service_name}</h4>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              booking.status === "Pending"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : booking.status === "Approved"
+                                ? "bg-green-100 text-green-700"
+                                : booking.status === "Cancelled"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-gray-100 text-gray-700"
+                            }`}>
+                              {booking.status}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-600 mt-1">{booking.description || booking.address}</div>
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="font-semibold text-cyan-700">
+                              {booking.price ? `₱${booking.price}` : ""}
+                            </span>
+                            <span className="text-xs text-gray-500">{booking.date || booking.schedule_date}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* User Details Section */}
+              <div className="bg-white rounded-2xl p-8 shadow-lg">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">First Name</label>
                     <input
@@ -326,152 +357,6 @@ function UserDashboard() {
                       readOnly
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 cursor-not-allowed"
                     />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column */}
-            <div className="space-y-6">
-              {/* Bookings Section */}
-              <div className="bg-white rounded-lg p-6 shadow-lg">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-lg font-semibold">Bookings</span>
-                    <div className="w-6 h-6 bg-gray-800 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">{bookings.length}</span>
-                    </div>
-                  </div>
-                  <button className="bg-cyan-500 text-white px-4 py-2 rounded-lg hover:bg-cyan-600 transition-colors">
-                    Book Now
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  {bookings.length === 0 ? (
-                    <div className="text-gray-500 text-center">No bookings yet.</div>
-                  ) : (
-                    bookings.map((booking) => (
-                      <div key={booking.id} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="text-xs text-gray-500">{booking.date}</div>
-                          <MoreVertical className="w-4 h-4 text-gray-400" />
-                        </div>
-                        <div className="flex space-x-3">
-                          <img
-                            src={booking.image || "/placeholder.svg"}
-                            alt={booking.title}
-                            className="w-16 h-16 rounded-lg object-cover"
-                          />
-                          <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">{booking.title}</h4>
-                            <p className="text-sm text-gray-600 mb-2">{booking.description}</p>
-                            <div className="flex items-center justify-between">
-                              <span className="font-semibold text-gray-900">{booking.price}</span>
-                              <span className={`px-2 py-1 rounded text-xs text-white ${booking.statusColor}`}>
-                                {booking.status}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* Map Section */}
-              <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-                <div className="h-64 relative">
-                  <MapContainer
-                    center={[10.3157, 123.8854]}
-                    zoom={12}
-                    scrollWheelZoom={true}
-                    style={{ height: "100%", width: "100%" }}
-                  >
-                    <TileLayer
-                      attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    />
-                    {approvedCarwashLocations.map((location, idx) => (
-                      <Marker
-                        key={idx}
-                        position={[
-                          location.latitude || 10.3157 + Math.random() * 0.1,
-                          location.longitude || 123.8854 + Math.random() * 0.1,
-                        ]}
-                      >
-                        <Popup>
-                          <strong>{location.name}</strong>
-                          <br />
-                          {location.type}
-                          <br />
-                          Status: {location.status}
-                        </Popup>
-                      </Marker>
-                    ))}
-                  </MapContainer>
-                  <div className="absolute top-4 left-4 bg-white rounded-lg px-3 py-2 shadow-lg">
-                    <span className="text-sm font-medium">Find a Carwash Near by.</span>
-                  </div>
-                </div>
-                <div className="p-4">
-                  <div className="flex space-x-4 mb-4">
-                    <button className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm">Area Setup</button>
-                    <button className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm">Pinned location</button>
-                  </div>
-                  <div className="mb-4">
-                    <label className="block text-sm text-gray-600 mb-2">Location Name:</label>
-                    <input
-                      type="text"
-                      placeholder="Cordova Cebu City"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 mb-2">Results</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {approvedCarwashLocations.map((location, index) => (
-                        <div key={index} className="border border-gray-200 rounded-lg p-3">
-                          <div className="flex items-start justify-between mb-2">
-                            <h4 className="font-medium text-sm">{location.name}</h4>
-                            <div className="flex space-x-1">
-                              <button className="p-1 hover:bg-gray-100 rounded">
-                                <Navigation className="w-3 h-3 text-gray-400" />
-                              </button>
-                              <button className="p-1 hover:bg-gray-100 rounded">
-                                <MapPin className="w-3 h-3 text-gray-400" />
-                              </button>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-1 mb-1">
-                            <div className="flex items-center">
-                              <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                              <span className="text-xs ml-1">{location.rating}</span>
-                            </div>
-                            <span className="text-xs text-gray-500">({location.reviews})</span>
-                          </div>
-                          <p className="text-xs text-gray-600 mb-1">{location.type}</p>
-                          <div className="flex items-center justify-between">
-                            <span
-                              className={`text-xs px-2 py-1 rounded ${
-                                location.status === "Open"
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-red-100 text-red-800"
-                              }`}
-                            >
-                              {location.status}
-                            </span>
-                            <span className="text-xs text-gray-500">{location.hours}</span>
-                          </div>
-                        </div>
-                      ))}
-                      {approvedCarwashLocations.length === 0 && (
-                        <div className="text-gray-500 text-center col-span-2">
-                          No approved carwash services found.
-                        </div>
-                      )}
-                    </div>
                   </div>
                 </div>
               </div>

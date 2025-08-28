@@ -208,21 +208,6 @@ function Register() {
               />
             </div>
 
-            <div className="flex items-start space-x-3">
-              <input
-                type="checkbox"
-                name="agreeToTerms"
-                checked={formData.agreeToTerms}
-                onChange={handleInputChange}
-                className="mt-1 w-4 h-4 text-cyan-500 bg-gray-100 border-gray-300 rounded focus:ring-cyan-500"
-              />
-              <label className="text-sm text-gray-600">
-                By creating a new account, I agree with{" "}
-                <a href="#" className="text-cyan-500 hover:underline">EggPay Terms</a> and{" "}
-                <a href="#" className="text-cyan-500 hover:underline">Privacy Policy</a>
-              </label>
-            </div>
-
             <button
               type="submit"
               className="w-full bg-black text-white py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500"
