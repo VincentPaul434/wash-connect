@@ -1,1 +1,12 @@
 wash-connect-frontend/README.md
+wash-connect-frontend/node_modules/
+wash-connect-backend/node_modules/
+.env
+.DS_Store
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+wash-connect-frontend/build/
+wash-connect-frontend/.env
+wash-connect-backend/.env
