@@ -3,7 +3,7 @@ import { FaRegCheckSquare, FaTrophy, FaUserCircle, FaDownload } from "react-icon
 import { useNavigate } from "react-router-dom";
 
 export default function EarningDashboard() {
-    const [summary, setSummary] = useState({
+    const [summary] = useState({
         carwashName: "Carwash Name",
         month: "April,2024",
         finished: 0,
@@ -19,7 +19,7 @@ export default function EarningDashboard() {
         profit: "7,200",
         profitChange: "↑ 4% this month"
     });
-    const [trend, setTrend] = useState([
+    const [trend] = useState([
         { name: "Jan", short: "Jan", value: 1000 },
         { name: "Feb", short: "Feb", value: 1200 },
         { name: "Mar", short: "Mar", value: 1500 },
@@ -27,12 +27,12 @@ export default function EarningDashboard() {
         { name: "May", short: "May", value: 800 },
         { name: "Jun", short: "Jun", value: 700 },
     ]);
-    const [details, setDetails] = useState([
+    const [details] = useState([
         { date: "2024-04-01", type: "Income", description: "Wash Service", amount: "500", status: "Completed" },
         { date: "2024-04-02", type: "Expense", description: "Supplies", amount: "200", status: "Completed" },
         { date: "2024-04-03", type: "Refund", description: "Customer Refund", amount: "100", status: "Refunded" },
     ]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {

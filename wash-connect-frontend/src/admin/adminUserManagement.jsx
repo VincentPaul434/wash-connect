@@ -191,7 +191,7 @@ function AdminUserManagement() {
                       />
                     </div>
                     <button
-                      className="bg-red-500 hover:bg-red-600 text-white rounded-full py-2 mt-2 font-semibold transition"
+                      className={`bg-red-500 hover:bg-red-600 text-white rounded-full py-2 mt-2 font-semibold transition ${c.status === "Banned" ? "opacity-50 cursor-not-allowed" : ""}`}
                       onClick={async () => {
                         await fetch(`http://localhost:3000/api/admin/customers/ban/${c.user_id}`, {
                           method: "PATCH",
@@ -202,6 +202,19 @@ function AdminUserManagement() {
                     >
                       Ban
                     </button>
+                    {c.status === "Banned" && (
+                      <button
+                        className="bg-green-500 hover:bg-green-600 text-white rounded-full py-2 mt-2 font-semibold transition"
+                        onClick={async () => {
+                          await fetch(`http://localhost:3000/api/admin/customers/unban/${c.user_id}`, {
+                            method: "PATCH",
+                          });
+                          fetchCustomers(); // Refresh list after unbanning
+                        }}
+                      >
+                        Unban
+                      </button>
+                    )}
                   </div>
                 ))
               )}

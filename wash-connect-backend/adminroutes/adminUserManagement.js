@@ -36,4 +36,14 @@ router.patch('/customers/ban/:userId', async (req, res) => {
   }
 });
 
+router.patch('/customers/unban/:userId', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    await pool.query("UPDATE users SET status = 'Active' WHERE user_id = ?", [userId]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to unban customer', details: error.message });
+  }
+});
+
 module.exports = router;

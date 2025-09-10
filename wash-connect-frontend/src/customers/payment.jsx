@@ -64,7 +64,7 @@ const PAYMENT_METHODS = [
 
       if (res.ok) {
         alert("Payment successful!");
-        navigate("/carwashowners/booking");
+        navigate(`/booking-confirmation`); // Redirect to booking confirmation
       } else {
         alert("Payment failed. Please try again.");
       }
