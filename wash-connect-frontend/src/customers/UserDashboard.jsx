@@ -14,6 +14,7 @@ import {
   MoreVertical,
 } from "lucide-react"
 import { FaEnvelope, FaUser, FaStar, FaHeart } from "react-icons/fa"
+import toast, { Toaster } from "react-hot-toast"
 
 function UserDashboard() {
   const navigate = useNavigate()
@@ -134,12 +135,21 @@ function UserDashboard() {
             Bookings
           </div>
           <hr className="my-4" />
-          <div className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
+          <div
+            className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
             onClick={() => {
               if (activeBooking) {
                 navigate("/booking-confirmation", { state: { appointment_id: activeBooking.appointment_id } });
               } else {
-                alert("No active appointment found.");
+                toast(
+                  <div>
+                    <span role="img" aria-label="calendar" style={{ fontSize: "1.5rem", marginRight: "0.5rem" }}>📅</span>
+                    <span>No active appointment found.</span>
+                  </div>,
+                  {
+                    icon: "🚫",
+                  }
+                );
               }
             }}
           >
@@ -364,6 +374,24 @@ function UserDashboard() {
           </div>
         </div>
       </div>
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          style: {
+            background: "#fff",
+            color: "#333",
+            border: "1px solid #a8d6ea",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+            fontSize: "1rem",
+            padding: "1rem 1.5rem",
+            borderRadius: "0.75rem",
+          },
+          iconTheme: {
+            primary: "#06b6d4",
+            secondary: "#e0f7fa",
+          },
+        }}
+      />
     </div>
   )
 }

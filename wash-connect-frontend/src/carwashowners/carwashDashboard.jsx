@@ -207,7 +207,6 @@ export default function CarwashDashboard() {
 				{/* Header */}
 				<header className="flex items-center justify-between px-8 py-4 bg-blue-100 border-b">
 					<div className="flex items-center gap-4">
-						<FaBars className="text-2xl text-gray-500" />
 						<h1 className="text-2xl font-semibold">Overview</h1>
 					</div>
 					<div className="flex items-center gap-2">
@@ -402,88 +401,95 @@ export default function CarwashDashboard() {
 								{recentBookings.length === 0 && (
 									<div className="text-gray-500 text-center col-span-2">No recent bookings.</div>
 								)}
-								{recentBookings.filter(b => b.status !== "Declined").map((booking) => (
-									<div
-										key={booking.id}
-										className="flex flex-col md:flex-row items-start md:items-center bg-white border border-gray-200 rounded-xl shadow p-4 gap-4 relative"
-										style={{ borderColor: "#ffeeba", background: "#fffde7" }}
-									>
-										<img
-											src={booking.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(booking.customer_name || "Customer")}`}
-											alt=""
-											className="w-14 h-14 rounded-full object-cover border-2 border-white shadow"
-										/>
-										<div className="flex-1 flex flex-col gap-1">
-											<div className="flex items-center gap-2">
-												<span className="font-semibold text-base">{booking.customer_name}</span>
-												<span className="text-xs text-gray-500">Customer</span>
-												<span className="ml-auto flex items-center gap-1 bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs font-medium">
-													<svg width="12" height="12" fill="currentColor"><circle cx="6" cy="6" r="6" /></svg>
-													{booking.status || "Pending"}
-												</span>
-											</div>
-											<div className="flex items-center gap-2 text-xs text-gray-500">
-												<span>{new Date(booking.schedule_date).toLocaleDateString()}</span>
-												<span>{new Date(booking.schedule_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-											</div>
-											<div className="flex items-center gap-2 text-sm mt-1">
-												<span className="font-semibold">Address:</span>
-												<span className="truncate">{booking.address}</span>
-											</div>
-											<div className="flex items-center gap-2 text-sm">
-												<span className="font-semibold">Services:</span>
-												<span className="truncate">{booking.service_name}</span>
-											</div>
-											<div className="flex items-center gap-2 text-sm">
-												<span className="font-semibold">Email:</span>
-												<span className="truncate">{booking.customer_email}</span>
-											</div>
-											<div className="flex gap-2 mt-2">
-												<button className="flex-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-													View Details
-												</button>
-												{booking.status !== "Confirmed" && (
-													<>
-														<button
-															className="flex-1 px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium hover:bg-green-600 hover:text-white transition-colors duration-150"
-															onClick={async () => {
-																console.log("Confirm clicked", booking.appointment_id);
-																await fetch(`http://localhost:3000/api/bookings/confirm/${booking.appointment_id}`, {
-																	method: "PATCH",
-																});
-																// Refresh bookings after confirming
-																const owner = JSON.parse(localStorage.getItem("carwashOwner"));
-																if (owner && owner.id) {
-																	const appRes = await fetch(`http://localhost:3000/api/carwash-applications/by-owner/${owner.id}`);
-																	const appData = await appRes.json();
-																	if (appData && appData.applicationId) {
-																		const bookingsRes = await fetch(`http://localhost:3000/api/bookings/by-application/${appData.applicationId}`);
-																		const bookingsData = await bookingsRes.json();
-																		setRecentBookings(bookingsData);
+								{recentBookings
+									.filter(b => b.status !== "Declined") // still hide declined
+									.map((booking) => (
+										<div
+											key={booking.id}
+											className="flex flex-col md:flex-row items-start md:items-center bg-white border border-gray-200 rounded-xl shadow p-4 gap-4 relative"
+											style={{ borderColor: "#ffeeba", background: "#fffde7" }}
+										>
+											<img
+												src={booking.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(booking.customer_name || "Customer")}`}
+												alt=""
+												className="w-14 h-14 rounded-full object-cover border-2 border-white shadow"
+											/>
+											<div className="flex-1 flex flex-col gap-1">
+												<div className="flex items-center gap-2">
+													<span className="font-semibold text-base">{booking.customer_name}</span>
+													<span className="text-xs text-gray-500">Customer</span>
+													<span className="ml-auto flex items-center gap-1 bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs font-medium">
+														<svg width="12" height="12" fill="currentColor"><circle cx="6" cy="6" r="6" /></svg>
+														{booking.status || "Pending"}
+													</span>
+												</div>
+												<div className="flex items-center gap-2 text-xs text-gray-500">
+													<span>{new Date(booking.schedule_date).toLocaleDateString()}</span>
+													<span>{new Date(booking.schedule_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+												</div>
+												<div className="flex items-center gap-2 text-sm mt-1">
+													<span className="font-semibold">Address:</span>
+													<span className="truncate">{booking.address}</span>
+												</div>
+												<div className="flex items-center gap-2 text-sm">
+													<span className="font-semibold">Services:</span>
+													<span className="truncate">{booking.service_name}</span>
+												</div>
+												<div className="flex items-center gap-2 text-sm">
+													<span className="font-semibold">Email:</span>
+													<span className="truncate">{booking.customer_email}</span>
+												</div>
+												<div className="flex gap-2 mt-2">
+													<button className="flex-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+														View Details
+													</button>
+													{/* Only show Confirm/Decline if NOT cancelled */}
+													{booking.status !== "Confirmed" && booking.status !== "Cancelled" && (
+														<>
+															<button
+																className="flex-1 px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium hover:bg-green-600 hover:text-white transition-colors duration-150"
+																onClick={async () => {
+																	await fetch(`http://localhost:3000/api/bookings/confirm/${booking.appointment_id}`, {
+																		method: "PATCH",
+																	});
+																	// Refresh bookings after confirming
+																	const owner = JSON.parse(localStorage.getItem("carwashOwner"));
+																	if (owner && owner.id) {
+																		const appRes = await fetch(`http://localhost:3000/api/carwash-applications/by-owner/${owner.id}`);
+																		const appData = await appRes.json();
+																		if (appData && appData.applicationId) {
+																			const bookingsRes = await fetch(`http://localhost:3000/api/bookings/by-application/${appData.applicationId}`);
+																			const bookingsData = await bookingsRes.json();
+																			setRecentBookings(bookingsData);
+																		}
 																	}
-																}
-															}}
-														>
-															Confirm
-														</button>
-														<button
-															className="flex-1 px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-medium hover:bg-red-600 hover:text-white transition-colors duration-150"
-															onClick={async () => {
-																await fetch(`http://localhost:3000/api/bookings/decline/${booking.appointment_id}`, {
-																	method: "PATCH",
-																});
-																// Remove the declined booking from the queue immediately
-																setRecentBookings(prev => prev.filter(b => b.appointment_id !== booking.appointment_id));
-															}}
-														>
-															Decline
-														</button>
-													</>
-												)}
+																}}
+															>
+																Confirm
+															</button>
+															<button
+																className="flex-1 px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-medium hover:bg-red-600 hover:text-white transition-colors duration-150"
+																onClick={async () => {
+																	await fetch(`http://localhost:3000/api/bookings/decline/${booking.appointment_id}`, {
+																		method: "PATCH",
+																	});
+																	setRecentBookings(prev => prev.filter(b => b.appointment_id !== booking.appointment_id));
+																}}
+															>
+																Decline
+															</button>
+														</>
+													)}
+													{/* If cancelled, just display a label */}
+													{booking.status === "Cancelled" && (
+														<span className="flex-1 px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs font-medium text-center">
+															Cancelled
+														</span>
+													)}
+												</div>
 											</div>
 										</div>
-									</div>
-								))}
+									))}
 							</div>
 						</div>
 					</section>

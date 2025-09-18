@@ -31,6 +31,8 @@ function BookingConfirmation() {
   const [booking, setBooking] = useState(null);
   const [canceling, setCanceling] = useState(false);
   const [cancelSuccess, setCancelSuccess] = useState(false);
+  const [activeBooking, setActiveBooking] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // Fetch booking details
   useEffect(() => {
@@ -73,6 +75,8 @@ function BookingConfirmation() {
     return () => { ignore = true; };
   }, [booking && booking.owner_id]);
 
+  // (Removed unused fetchBookingDetails function)
+
   // Add these states for rating
     const [rating, setRating] = useState(0);
     const [hover, setHover] = useState(0);
@@ -80,15 +84,44 @@ function BookingConfirmation() {
     const [submitting, setSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
   
-    if (!appointment_id || !booking) {
+    useEffect(() => {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const userId = user.id || user.user_id;
+      if (userId) {
+        fetch(`http://localhost:3000/api/bookings/customers/${userId}`)
+          .then(res => res.json())
+          .then(bookings => {
+            const latest = bookings.find(
+              b => b.status !== "Declined" && b.status !== "Done" && b.status !== "Cancelled"
+            );
+            setActiveBooking(latest || null);
+            setLoading(false);
+          });
+      } else {
+        setLoading(false);
+      }
+    }, []);
+
+    if (loading) {
       return (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="bg-white p-8 rounded-lg shadow-md text-center">
-            <h2 className="text-2xl font-semibold mb-4">No Appointments Booked</h2>
-            <p className="mb-6">You currently have no active appointments. Book a service to get started!</p>
+        <div className="min-h-screen flex items-center justify-center bg-[#c8f1ff]">
+          <div className="text-gray-500 text-xl">Loading...</div>
+        </div>
+      );
+    }
+
+    if (!activeBooking) {
+      // Show "No Appointments Booked" message and Book Now button
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-[#c8f1ff]">
+          <div className="bg-white rounded-xl shadow p-8 flex flex-col items-center">
+            <h2 className="text-2xl font-semibold mb-2 text-black">No Appointments Booked</h2>
+            <p className="mb-6 text-gray-700 text-center">
+              You currently have no active appointments. Book a service to get started!
+            </p>
             <button
-              onClick={() => navigate("/book")}
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 font-semibold"
+              onClick={() => navigate("/popular-carwash")}
             >
               Book Now
             </button>
@@ -143,6 +176,12 @@ function BookingConfirmation() {
     }
     setCanceling(false);
   };
+
+  const paidAmount = booking?.payments
+  ? booking.payments.reduce((sum, p) => sum + (p.amount || 0), 0)
+  : booking?.paid_amount || 0;
+
+  const remainingBalance = servicePrice - paidAmount;
 
   return (
     <div className="min-h-screen flex bg-[#c8f1ff]">
@@ -408,6 +447,14 @@ function BookingConfirmation() {
                   <span>PHP {servicePrice}</span>
                 </div>
                 <div className="flex justify-between mb-2">
+                  <span>Paid Amount</span>
+                  <span>PHP {paidAmount}</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span>Remaining Balance</span>
+                  <span>PHP {remainingBalance > 0 ? remainingBalance : 0}</span>
+                </div>
+                <div className="flex justify-between mb-2">
                   <span>Partial payment</span>
                   <span>PHP {servicePrice / 2}</span>
                 </div>
@@ -417,7 +464,7 @@ function BookingConfirmation() {
                 </div>
                 <div className="flex justify-between font-bold border-t pt-2">
                   <span>Total</span>
-                  <span>PHP {servicePrice / 2}</span>
+                  <span>PHP {remainingBalance > 0 ? remainingBalance : 0}</span>
                 </div>
               </div>
               <button className="w-full bg-green-500 text-white py-2 rounded font-semibold mb-2 hover:bg-green-600"

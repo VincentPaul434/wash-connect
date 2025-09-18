@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { User, Mail, Star, Calendar, MapPin } from "lucide-react";
+import toast, { Toaster } from "react-hot-toast";
 
 const services = [
 	{
@@ -84,6 +85,7 @@ function BookingPage() {
 
 	return (
 		<div className="flex min-h-screen bg-[#c8f1ff]">
+			<Toaster position="top-center" />
 			{/* Sidebar */}
 			<div className="w-72 bg-white border-r border-gray-200 flex flex-col min-h-screen">
 				<div className="flex items-center px-8 py-8 border-b border-gray-100">
@@ -250,30 +252,37 @@ function BookingPage() {
 									Php{service.price}
 								</div>
 								<button
-									className="border border-blue-400 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 text-xs"
-									onClick={() => {
-										const user = JSON.parse(localStorage.getItem("user")) || {};
-										navigate("/book-form", {
-											state: {
-												applicationId: applicationId,
-												serviceName: service.name,
-												carwashName: location.state?.carwashName || "Carwash",
-												firstName: user.first_name || "",
-												lastName: user.last_name || "",
-												email: user.email || "",
-												address: user.address || "",
-											},
-										});
-									}}
-									disabled={hasActiveBooking}
-								>
-									Book Now
-								</button>
-								{hasActiveBooking && (
-									<div className="text-red-500 mt-2">
-										You already have an active booking. Please complete or cancel it before booking another.
-									</div>
-								)}
+  className={`border border-blue-400 px-2 py-1 rounded text-xs font-semibold transition
+    ${hasActiveBooking ? "bg-gray-300 text-gray-500" : "bg-blue-50 text-blue-700 hover:bg-blue-100"}
+  `}
+  onClick={() => {
+    if (hasActiveBooking) {
+      toast.error(
+        "You already have an active booking. Please complete or cancel it before booking another."
+      );
+      return;
+    }
+    if (!location.state?.carwashName) {
+      toast("Please choose a carwash shop first!", { icon: "🧼" });
+      navigate("/popular-carwash");
+      return;
+    }
+    const user = JSON.parse(localStorage.getItem("user")) || {};
+    navigate("/book-form", {
+      state: {
+        applicationId: applicationId,
+        serviceName: service.name,
+        carwashName: location.state?.carwashName || "Carwash",
+        firstName: user.first_name || "",
+        lastName: user.last_name || "",
+        email: user.email || "",
+        address: user.address || "",
+      },
+    });
+  }}
+>
+  Book Now
+</button>
 							</div>
 						))}
 					</div>

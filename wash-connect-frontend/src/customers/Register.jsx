@@ -59,7 +59,7 @@ function Register() {
       }
 
       alert("Registration successful! User ID: " + data.userId);
-      // Optionally clear the form or redirect
+      navigate("/login"); // Redirect to login page after successful registration
     } catch (err) {
       alert("Error: " + err.message);
     }

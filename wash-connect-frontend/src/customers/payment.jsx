@@ -9,7 +9,7 @@ const PAYMENT_METHODS = [
   { key: "other", label: "Other", icon: "📝" },
 ];
 
- function Payment() {
+function Payment() {
   const navigate = useNavigate();
   const { appointmentId: paramAppointmentId } = useParams();
   const location = useLocation();
@@ -24,12 +24,12 @@ const PAYMENT_METHODS = [
   const [subtotal, setSubtotal] = useState(0);
   const [previousPayments, setPreviousPayments] = useState(0);
 
-  // Fetch booking details to get the subtotal
   useEffect(() => {
     if (appointment_id) {
       fetch(`http://localhost:3000/api/bookings/with-personnel/${appointment_id}`)
         .then(res => res.json())
         .then(data => {
+          console.log("Booking object:", data); // <-- Add this line
           setBooking(data);
           setSubtotal(data.price || 0);
           setPreviousPayments(data.amount_paid || 0);
@@ -38,28 +38,42 @@ const PAYMENT_METHODS = [
   }, [appointment_id]);
 
   // Calculate remaining balance
-  const remaining = subtotal - previousPayments - (parseFloat(amount) || 0);
+  const enteredAmount = parseFloat(amount) || 0;
+  const paidAmount = previousPayments + enteredAmount;
+  const remaining = subtotal - paidAmount;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setUploading(true);
 
+    if (!method) {
+      alert("Please select a payment method.");
+      setUploading(false);
+      return;
+    }
+
     if (appointment_id) {
-      // Send as JSON (no file upload)
       const res = await fetch(
         `http://localhost:3000/api/bookings/payment/${appointment_id}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            user_id: booking?.user_id,
-            amount,
+            user_id: booking?.user_id || booking?.customer_id,
+            amount: Number(amount),
             method,
-            status: "Partially Paid",
             payment_status: remaining > 0 ? "Partial" : "Paid",
           }),
         }
       );
+
+      console.log({
+        user_id: booking?.user_id || booking?.customer_id,
+        amount,
+        method,
+        status: remaining > 0 ? "Partially Paid" : "Paid",
+        payment_status: remaining > 0 ? "Partial" : "Paid",
+      });
 
       setUploading(false);
 
@@ -72,8 +86,32 @@ const PAYMENT_METHODS = [
       }
     } else {
       setUploading(false);
-      console.error("No appointment_id provided for payment.");
       alert("No appointment ID found. Cannot process payment.");
+    }
+  };
+
+  const handlePayRemaining = async () => {
+    setUploading(true);
+    const res = await fetch(
+      `http://localhost:3000/api/bookings/payment/${appointment_id}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: booking?.user_id || booking?.customer_id,
+          amount: remaining,
+          method,
+          payment_status: "Paid",
+        }),
+      }
+    );
+    setUploading(false);
+    if (res.ok) {
+      alert("Remaining balance paid!");
+      navigate(`/booking-confirmation`);
+    } else {
+      const errorData = await res.json();
+      alert("Payment failed: " + (errorData.error || "Please try again."));
     }
   };
 
@@ -112,11 +150,10 @@ const PAYMENT_METHODS = [
               min="0"
               step="0.01"
               className="w-full border rounded px-3 py-2 text-lg"
-              placeholder={`₱ Enter amount (e.g. ${subtotal})`}
+              placeholder={`₱ Enter amount${subtotal > 0 ? ` (e.g. ${subtotal})` : ""}`}
               value={amount}
               onChange={e => setAmount(e.target.value)}
               required
-              max={subtotal}
             />
             <div className="text-xs text-gray-500 mt-1">
               Enter the amount received from the client.
@@ -162,11 +199,13 @@ const PAYMENT_METHODS = [
                 Remaining Balance for <span className="font-semibold">{booking.service_name}</span>:
               </div>
               <div className="text-2xl font-bold text-blue-700">
-                ₱{remaining > 0 ? remaining.toLocaleString() : 0}
+                ₱{(subtotal - previousPayments - (parseFloat(amount) || 0)) > 0
+                  ? (subtotal - previousPayments - (parseFloat(amount) || 0)).toLocaleString()
+                  : 0}
               </div>
               <div className="text-xs text-gray-500">
                 Subtotal: ₱{subtotal.toLocaleString()}<br />
-                Paid: ₱{previousPayments.toLocaleString()}
+                Paid: ₱{(Number(previousPayments) + Number(amount || 0)).toLocaleString()}
               </div>
             </div>
           </div>
@@ -188,10 +227,11 @@ const PAYMENT_METHODS = [
             </button>
             <button
               type="button"
-              className="bg-blue-200 text-blue-700 px-3 py-1 rounded ml-2"
-              onClick={() => setAmount(subtotal / 2)}
+              className="bg-blue-500 text-white px-6 py-2 rounded font-semibold hover:bg-blue-600"
+              onClick={handlePayRemaining}
+              disabled={subtotal - previousPayments <= 0 || uploading}
             >
-              Pay Half
+              Pay Remaining
             </button>
           </div>
         </form>
@@ -207,4 +247,5 @@ const PAYMENT_METHODS = [
       </footer>
     </div>
   );
-} export default Payment;
+}
+export default Payment;

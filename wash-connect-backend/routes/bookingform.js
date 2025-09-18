@@ -9,8 +9,6 @@ router.patch('/bookings/confirm/:appointmentId', bookingformController.confirmBo
 router.get('/bookings/confirmed/:applicationId', bookingformController.getConfirmedBookingsByApplication);
 router.get('/bookings/with-personnel/:appointmentId', bookingformController.getBookingWithPersonnel);
 router.patch('/bookings/decline/:appointmentId', bookingformController.declineBooking);
-router.patch('/bookings/payment/:appointmentId', bookingformController.updatePaymentStatus);
-router.post('/bookings/payment/:appointmentId', bookingformController.recordPayment);
 router.patch('/bookings/cancel/:appointmentId', bookingformController.cancelBooking);
 
 module.exports = router;
