@@ -49,12 +49,13 @@ const PAYMENT_METHODS = [
       const res = await fetch(
         `http://localhost:3000/api/bookings/payment/${appointment_id}`,
         {
-          method: "PATCH",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            user_id: booking?.user_id,
             amount,
             method,
-            status: "On Going",
+            status: "Partially Paid",
             payment_status: remaining > 0 ? "Partial" : "Paid",
           }),
         }
@@ -66,7 +67,8 @@ const PAYMENT_METHODS = [
         alert("Payment successful!");
         navigate(`/booking-confirmation`); // Redirect to booking confirmation
       } else {
-        alert("Payment failed. Please try again.");
+        const errorData = await res.json();
+        alert("Payment failed: " + (errorData.error || "Please try again."));
       }
     } else {
       setUploading(false);
@@ -183,6 +185,13 @@ const PAYMENT_METHODS = [
               disabled={uploading}
             >
               Cancel
+            </button>
+            <button
+              type="button"
+              className="bg-blue-200 text-blue-700 px-3 py-1 rounded ml-2"
+              onClick={() => setAmount(subtotal / 2)}
+            >
+              Pay Half
             </button>
           </div>
         </form>

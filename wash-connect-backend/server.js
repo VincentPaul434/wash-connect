@@ -19,8 +19,7 @@ const personnelRoutes = require('./routes/personnel');
 const carwashOwnersRoutes = require('./routes/carwashOwners');
 const ownerAvatarUpload = require('./routes/ownerAvatarUpload');
 const feedbackRoutes = require('./routes/feedback');
-
-
+const paymentRoutes = require('./routes/payment');
 
 
 
@@ -43,8 +42,7 @@ app.use('/api', personnelRoutes);
 app.use('/api', carwashOwnersRoutes);
 app.use('/api', ownerAvatarUpload);
 app.use('/api', feedbackRoutes);
-
-
+app.use('/api', paymentRoutes);
 
 //admin
 app.use('/api/admin', adminRegisterRoutes);
