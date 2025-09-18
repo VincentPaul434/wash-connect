@@ -18,7 +18,7 @@ const bookingFormRoutes = require('./routes/bookingform');
 const personnelRoutes = require('./routes/personnel');
 const carwashOwnersRoutes = require('./routes/carwashOwners');
 const ownerAvatarUpload = require('./routes/ownerAvatarUpload');
-const bookingRateRoutes = require('./routes/bookingRate');
+const feedbackRoutes = require('./routes/feedback');
 
 
 
@@ -42,7 +42,7 @@ app.use('/api', bookingFormRoutes);
 app.use('/api', personnelRoutes);
 app.use('/api', carwashOwnersRoutes);
 app.use('/api', ownerAvatarUpload);
-app.use('/api', bookingRateRoutes);
+app.use('/api', feedbackRoutes);
 
 
 

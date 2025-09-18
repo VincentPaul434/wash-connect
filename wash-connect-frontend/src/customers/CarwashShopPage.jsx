@@ -146,13 +146,7 @@ function CarwashShopPage() {
         <header className="flex items-center justify-between px-8 py-6 bg-[#a8d6ea] border-b border-gray-200">
           <div className="flex items-center">
             <button className="mr-4">
-              <svg className="w-7 h-7 text-gray-700" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <rect width="20" height="2" x="2" y="6" rx="1" fill="currentColor" />
-                <rect width="20" height="2" x="2" y="11" rx="1" fill="currentColor" />
-                <rect width="20" height="2" x="2" y="16" rx="1" fill="currentColor" />
-              </svg>
             </button>
-            <span className="text-2xl font-bold">Reviews</span>
           </div>
           <div className="flex items-center gap-4">
             <div className="relative">
