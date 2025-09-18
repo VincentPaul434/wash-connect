@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { User, Mail, Star, Calendar, MapPin } from "lucide-react";
+import { FaEnvelope, FaUser, FaStar, FaHeart, FaCalendarAlt, FaSignOutAlt } from "react-icons/fa";
 import toast, { Toaster } from "react-hot-toast";
 
 const services = [
@@ -99,7 +100,7 @@ function BookingPage() {
 				</div>
 				<nav className="flex-1 px-4 py-6 space-y-2">
 					<div className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer">
-						<Mail className="mr-3 w-5 h-5" />
+						<FaEnvelope className="mr-3 w-5 h-5" />
 						Inbox
 						<span className="ml-auto bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-sm">
 							0
@@ -108,19 +109,24 @@ function BookingPage() {
 					<div className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
             onClick={() => navigate("/user-dashboard")}
           >
-						<User className="mr-3 w-5 h-5" />
+						<FaUser className="mr-3 w-5 h-5" />
 						Account
 					</div>
 					<div className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
             onClick={() => navigate("/popular-carwash")}
           >
-						<Star className="mr-3 w-5 h-5" />
-						<span className="text-gray-700">Carwash Shops</span>
+						<FaStar className="mr-3 w-5 h-5" />
+						Carwash Shops
 					</div>
-					<div className="flex items-center w-full px-4 py-3 rounded-lg bg-cyan-100 text-cyan-700 font-semibold cursor-pointer">
-						<span className="text-xl">♡</span>
-						<span className="text-gray-700">Bookings</span>
-					</div>
+					<div
+						className={`flex items-center w-full px-4 py-3 rounded-lg font-semibold cursor-pointer
+							${location.pathname === "/book" ? "bg-cyan-100 text-cyan-700" : "hover:bg-gray-100 text-gray-700"}
+						`}
+						onClick={() => navigate("/book")}
+						>
+						<FaHeart className="mr-3 w-5 h-5" />
+						Bookings
+						</div>
 					<hr className="my-4" />
 					<div
 						className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
@@ -128,11 +134,11 @@ function BookingPage() {
 							if (activeBooking) {
 								navigate("/booking-confirmation", { state: { appointment_id: activeBooking.appointment_id } });
 							} else {
-								navigate("/booking-confirmation", { state: { appointment_id: null } });
+								toast("No active appointment found. Please book a service first!", { icon: "📅" });
 							}
 						}}
 					>
-						<Calendar className="mr-3 w-5 h-5" />
+						<FaCalendarAlt className="mr-3 w-5 h-5" />
 						<span className="text-gray-700">Appointment</span>
 					</div>
 					<div className="mt-auto px-4 pt-8">
@@ -140,8 +146,8 @@ function BookingPage() {
 							className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
 							onClick={handleLogout}
 						>
-							<span className="text-xl">📁</span>
-							<span className="text-gray-700">LogOut</span>
+							<FaSignOutAlt className="mr-3 w-5 h-5" />
+							LogOut
 						</div>
 					</div>
 				</nav>

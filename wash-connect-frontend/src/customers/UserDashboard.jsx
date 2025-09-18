@@ -185,53 +185,62 @@ function UserDashboard() {
           <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Profile Card */}
             <div className="col-span-1">
-              <div className="bg-white rounded-2xl p-8 shadow-lg flex flex-col items-center">
+              <div className="bg-gradient-to-br from-cyan-100 to-blue-50 rounded-2xl p-8 shadow-xl flex flex-col items-center relative">
                 <div className="relative mb-4">
                   <img
                     src={profilePic || "/placeholder.svg"}
                     alt="Profile"
-                    className="w-24 h-24 rounded-full object-cover border-4 border-cyan-200"
+                    className="w-28 h-28 rounded-full object-cover border-4 border-cyan-300 shadow-lg"
                   />
-                  <label className="absolute bottom-0 right-0 bg-blue-500 rounded-full p-2 cursor-pointer hover:bg-blue-600 border-2 border-white">
+                  <label className="absolute bottom-2 right-2 bg-blue-500 rounded-full p-2 cursor-pointer hover:bg-blue-600 border-2 border-white shadow-lg">
                     <input
                       type="file"
                       accept="image/*"
                       className="hidden"
                       onChange={handleProfilePicChange}
                     />
-                    <FaUser className="w-4 h-4 text-white" />
+                    <User className="w-5 h-5 text-white" />
                   </label>
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-1">
+                <h2 className="text-2xl font-bold text-gray-900 mb-1 tracking-wide">
                   {userInfo.firstName} {userInfo.lastName}
                 </h2>
-                <p className="text-gray-500 mb-2">Customer</p>
-                <div className="flex space-x-2 mb-4">
-                  <button className="p-2 bg-gray-100 rounded-full hover:bg-gray-200">
-                    <Mail className="w-5 h-5 text-gray-600" />
+                <span className="text-cyan-600 font-semibold mb-2">Customer</span>
+                <div className="flex space-x-3 mb-4">
+                  <button className="p-2 bg-white rounded-full shadow hover:bg-cyan-100 transition">
+                    <Mail className="w-5 h-5 text-cyan-500" />
                   </button>
-                  <button className="p-2 bg-gray-100 rounded-full hover:bg-gray-200">
-                    <Phone className="w-5 h-5 text-gray-600" />
+                  <button className="p-2 bg-white rounded-full shadow hover:bg-cyan-100 transition">
+                    <Phone className="w-5 h-5 text-cyan-500" />
                   </button>
-                  <button className="p-2 bg-gray-100 rounded-full hover:bg-gray-200">
-                    <Video className="w-5 h-5 text-gray-600" />
-                  </button>
-                  <button className="p-2 bg-gray-100 rounded-full hover:bg-gray-200">
-                    <MessageCircle className="w-5 h-5 text-gray-600" />
+                  <button className="p-2 bg-white rounded-full shadow hover:bg-cyan-100 transition">
+                    <MessageCircle className="w-5 h-5 text-cyan-500" />
                   </button>
                 </div>
                 <div className="w-full mt-4">
-                  <div className="mb-2">
-                    <span className="block text-xs text-gray-500">Email</span>
-                    <span className="block font-medium text-gray-800">{userInfo.email}</span>
+                  <div className="border-b pb-4 mb-4">
+                    <div className="flex items-center mb-2">
+                      <Mail className="w-4 h-4 text-cyan-400 mr-2" />
+                      <span className="font-medium text-gray-800">{userInfo.email}</span>
+                    </div>
+                    <div className="flex items-center mb-2">
+                      <Phone className="w-4 h-4 text-cyan-400 mr-2" />
+                      <span className="font-medium text-gray-800">{userInfo.contactNumber}</span>
+                    </div>
+                    <div className="flex items-center mb-2">
+                      <Inbox className="w-4 h-4 text-cyan-400 mr-2" />
+                      <span className="font-medium text-gray-800">{userInfo.address}</span>
+                    </div>
                   </div>
-                  <div className="mb-2">
-                    <span className="block text-xs text-gray-500">Contact</span>
-                    <span className="block font-medium text-gray-800">{userInfo.contactNumber}</span>
-                  </div>
-                  <div className="mb-2">
-                    <span className="block text-xs text-gray-500">Address</span>
-                    <span className="block font-medium text-gray-800">{userInfo.address}</span>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <span className="block text-xs text-gray-500 mb-1">Birthday</span>
+                      <span className="block font-medium text-gray-800">{userInfo.birthday}</span>
+                    </div>
+                    <div>
+                      <span className="block text-xs text-gray-500 mb-1">Gender</span>
+                      <span className="block font-medium text-gray-800">{userInfo.gender}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -239,7 +248,7 @@ function UserDashboard() {
 
             {/* Bookings Section */}
             <div className="col-span-2 flex flex-col gap-8">
-              <div className="bg-white rounded-2xl p-8 shadow-lg">
+              <div className="bg-white rounded-2xl p-8 shadow-xl mb-8">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center space-x-2">
                     <span className="text-xl font-semibold">My Bookings</span>
@@ -248,27 +257,28 @@ function UserDashboard() {
                     </div>
                   </div>
                   <button
-                    className="bg-cyan-500 text-white px-6 py-2 rounded-lg hover:bg-cyan-600 transition-colors font-semibold"
+                    className="bg-cyan-500 text-white px-6 py-2 rounded-lg hover:bg-cyan-600 transition-colors font-semibold shadow"
                     onClick={() => navigate("/book")}
                   >
                     Book Now
                   </button>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {bookings.length === 0 ? (
                     <div className="text-gray-500 text-center py-8">No bookings yet.</div>
                   ) : (
                     bookings.map((booking) => (
-                      <div key={booking.id} className="border border-gray-100 rounded-xl p-5 bg-cyan-50 flex flex-col md:flex-row items-center gap-4 shadow-sm">
-                        <img
-                          src={booking.image || "/placeholder.svg"}
-                          alt={booking.title}
-                          className="w-20 h-20 rounded-lg object-cover border border-cyan-200"
-                        />
+                      <div
+                        key={booking.id}
+                        className="border border-gray-100 rounded-xl p-6 bg-gradient-to-r from-blue-50 to-cyan-50 flex flex-col md:flex-row items-center gap-6 shadow hover:shadow-lg transition"
+                      >
+                        <div className="flex items-center justify-center w-20 h-20 rounded-lg bg-cyan-100 border border-cyan-200 mr-4">
+                          <FaStar className="text-cyan-500 text-2xl" />
+                        </div>
                         <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-semibold text-gray-900">{booking.title || booking.service_name}</h4>
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-semibold text-gray-900 text-lg">{booking.title || booking.service_name}</h4>
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold shadow ${
                               booking.status === "Pending"
                                 ? "bg-yellow-100 text-yellow-700"
                                 : booking.status === "Approved"
@@ -280,9 +290,9 @@ function UserDashboard() {
                               {booking.status}
                             </span>
                           </div>
-                          <div className="text-sm text-gray-600 mt-1">{booking.description || booking.address}</div>
+                          <div className="text-sm text-gray-600 mb-1">{booking.description || booking.address}</div>
                           <div className="flex items-center justify-between mt-2">
-                            <span className="font-semibold text-cyan-700">
+                            <span className="font-semibold text-cyan-700 text-base">
                               {booking.price ? `₱${booking.price}` : ""}
                             </span>
                             <span className="text-xs text-gray-500">{booking.date || booking.schedule_date}</span>
@@ -295,78 +305,50 @@ function UserDashboard() {
               </div>
 
               {/* User Details Section */}
-              <div className="bg-white rounded-2xl p-8 shadow-lg">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-2xl p-8 shadow-xl">
+                <h3 className="text-lg font-bold text-gray-900 mb-6 border-b pb-2">Personal Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">First Name</label>
-                    <input
-                      type="text"
-                      name="firstName"
-                      value={userInfo.firstName}
-                      readOnly
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 cursor-not-allowed"
-                    />
+                    <label className="flex items-center text-sm text-gray-600 mb-2">
+                      <FaUser className="mr-2 text-cyan-400" /> First Name
+                    </label>
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-gray-800 font-medium">{userInfo.firstName}</div>
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">Last Name</label>
-                    <input
-                      type="text"
-                      name="lastName"
-                      value={userInfo.lastName}
-                      readOnly
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 cursor-not-allowed"
-                    />
+                    <label className="flex items-center text-sm text-gray-600 mb-2">
+                      <FaUser className="mr-2 text-cyan-400" /> Last Name
+                    </label>
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-gray-800 font-medium">{userInfo.lastName}</div>
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">Email Address</label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={userInfo.email}
-                      readOnly
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 cursor-not-allowed"
-                    />
+                    <label className="flex items-center text-sm text-gray-600 mb-2">
+                      <FaEnvelope className="mr-2 text-cyan-400" /> Email Address
+                    </label>
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-gray-800 font-medium">{userInfo.email}</div>
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">Contact Number</label>
-                    <input
-                      type="tel"
-                      name="contactNumber"
-                      value={userInfo.contactNumber}
-                      readOnly
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 cursor-not-allowed"
-                    />
+                    <label className="flex items-center text-sm text-gray-600 mb-2">
+                      <Phone className="mr-2 text-cyan-400" /> Contact Number
+                    </label>
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-gray-800 font-medium">{userInfo.contactNumber}</div>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="flex items-center text-sm text-gray-600 mb-2">
+                      <Inbox className="mr-2 text-cyan-400" /> Address
+                    </label>
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-gray-800 font-medium">{userInfo.address}</div>
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">Address</label>
-                    <input
-                      type="text"
-                      name="address"
-                      value={userInfo.address}
-                      readOnly
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 cursor-not-allowed"
-                    />
+                    <label className="flex items-center text-sm text-gray-600 mb-2">
+                      <Calendar className="mr-2 text-cyan-400" /> Birthday
+                    </label>
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-gray-800 font-medium">{userInfo.birthday}</div>
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">Birthday</label>
-                    <input
-                      type="text"
-                      name="birthday"
-                      value={userInfo.birthday}
-                      readOnly
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 cursor-not-allowed"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">Gender</label>
-                    <input
-                      type="text"
-                      name="gender"
-                      value={userInfo.gender}
-                      readOnly
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 cursor-not-allowed"
-                    />
+                    <label className="flex items-center text-sm text-gray-600 mb-2">
+                      <User className="mr-2 text-cyan-400" /> Gender
+                    </label>
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-gray-800 font-medium">{userInfo.gender}</div>
                   </div>
                 </div>
               </div>
