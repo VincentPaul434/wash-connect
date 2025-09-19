@@ -66,6 +66,7 @@ export default function CarwashDashboard() {
     const [carwashData, setCarwashData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [profileUploaded, setProfileUploaded] = useState(false);
+    const [toast, setToast] = useState({ show: false, message: "", type: "success" });
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -112,6 +113,11 @@ export default function CarwashDashboard() {
 			return () => clearTimeout(timer);
 		}
 	}, [profileUploaded]);
+
+	const showToast = (message, type = "success") => {
+		setToast({ show: true, message, type });
+		setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
+	};
 
 	if (isLoading) {
 		return <div className="flex justify-center items-center h-screen">Loading...</div>;
@@ -401,95 +407,140 @@ export default function CarwashDashboard() {
 								{recentBookings.length === 0 && (
 									<div className="text-gray-500 text-center col-span-2">No recent bookings.</div>
 								)}
-								{recentBookings
-									.filter(b => b.status !== "Declined") // still hide declined
-									.map((booking) => (
-										<div
-											key={booking.id}
-											className="flex flex-col md:flex-row items-start md:items-center bg-white border border-gray-200 rounded-xl shadow p-4 gap-4 relative"
-											style={{ borderColor: "#ffeeba", background: "#fffde7" }}
-										>
-											<img
-												src={booking.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(booking.customer_name || "Customer")}`}
-												alt=""
-												className="w-14 h-14 rounded-full object-cover border-2 border-white shadow"
-											/>
-											<div className="flex-1 flex flex-col gap-1">
-												<div className="flex items-center gap-2">
-													<span className="font-semibold text-base">{booking.customer_name}</span>
-													<span className="text-xs text-gray-500">Customer</span>
-													<span className="ml-auto flex items-center gap-1 bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs font-medium">
-														<svg width="12" height="12" fill="currentColor"><circle cx="6" cy="6" r="6" /></svg>
-														{booking.status || "Pending"}
-													</span>
-												</div>
-												<div className="flex items-center gap-2 text-xs text-gray-500">
-													<span>{new Date(booking.schedule_date).toLocaleDateString()}</span>
-													<span>{new Date(booking.schedule_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-												</div>
-												<div className="flex items-center gap-2 text-sm mt-1">
-													<span className="font-semibold">Address:</span>
-													<span className="truncate">{booking.address}</span>
-												</div>
-												<div className="flex items-center gap-2 text-sm">
-													<span className="font-semibold">Services:</span>
-													<span className="truncate">{booking.service_name}</span>
-												</div>
-												<div className="flex items-center gap-2 text-sm">
-													<span className="font-semibold">Email:</span>
-													<span className="truncate">{booking.customer_email}</span>
-												</div>
-												<div className="flex gap-2 mt-2">
-													<button className="flex-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-														View Details
-													</button>
-													{/* Only show Confirm/Decline if NOT cancelled */}
-													{booking.status !== "Confirmed" && booking.status !== "Cancelled" && (
-														<>
-															<button
-																className="flex-1 px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium hover:bg-green-600 hover:text-white transition-colors duration-150"
-																onClick={async () => {
-																	await fetch(`http://localhost:3000/api/bookings/confirm/${booking.appointment_id}`, {
-																		method: "PATCH",
-																	});
-																	// Refresh bookings after confirming
-																	const owner = JSON.parse(localStorage.getItem("carwashOwner"));
-																	if (owner && owner.id) {
-																		const appRes = await fetch(`http://localhost:3000/api/carwash-applications/by-owner/${owner.id}`);
-																		const appData = await appRes.json();
-																		if (appData && appData.applicationId) {
-																			const bookingsRes = await fetch(`http://localhost:3000/api/bookings/by-application/${appData.applicationId}`);
-																			const bookingsData = await bookingsRes.json();
-																			setRecentBookings(bookingsData);
-																		}
-																	}
-																}}
-															>
-																Confirm
+								{/* FIX: Define today here */}
+								{(() => {
+									const today = new Date().toISOString().slice(0, 10); // <-- Move this here
+									return recentBookings
+										.filter(b => b.status !== "Declined" && b.status !== "Cancelled")
+										.filter(b => {
+											// Ensure schedule_date is in YYYY-MM-DD format
+											const bookingDate = new Date(b.schedule_date).toISOString().slice(0, 10);
+											return bookingDate === today;
+										})
+										.map((booking) => {
+											const apptId = getAppointmentId(booking);
+											return (
+												<div
+													key={apptId} // use the actual id you will send to backend
+													className="flex flex-col md:flex-row items-start md:items-center bg-white border border-gray-200 rounded-xl shadow p-4 gap-4 relative"
+													style={{ borderColor: "#ffeeba", background: "#fffde7" }}
+												>
+													<img
+														src={booking.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(booking.customer_name || "Customer")}`}
+														alt=""
+														className="w-14 h-14 rounded-full object-cover border-2 border-white shadow"
+													/>
+													<div className="flex-1 flex flex-col gap-1">
+														<div className="flex items-center gap-2">
+															<span className="font-semibold text-base">{booking.customer_name}</span>
+															<span className="text-xs text-gray-500">Customer</span>
+															<span className="ml-auto flex items-center gap-1 bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs font-medium">
+																<svg width="12" height="12" fill="currentColor"><circle cx="6" cy="6" r="6" /></svg>
+																{booking.status || "Pending"}
+															</span>
+														</div>
+														<div className="flex items-center gap-2 text-xs text-gray-500">
+															<span>{new Date(booking.schedule_date).toLocaleDateString()}</span>
+															<span>{new Date(booking.schedule_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+														</div>
+														<div className="flex items-center gap-2 text-sm mt-1">
+															<span className="font-semibold">Address:</span>
+															<span className="truncate">{booking.address}</span>
+														</div>
+														<div className="flex items-center gap-2 text-sm">
+															<span className="font-semibold">Services:</span>
+															<span className="truncate">{booking.service_name}</span>
+														</div>
+														<div className="flex items-center gap-2 text-sm">
+															<span className="font-semibold">Email:</span>
+															<span className="truncate">{booking.customer_email}</span>
+														</div>
+														<div className="flex gap-2 mt-2">
+															<button className="flex-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+																View Details
 															</button>
-															<button
-																className="flex-1 px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-medium hover:bg-red-600 hover:text-white transition-colors duration-150"
-																onClick={async () => {
-																	await fetch(`http://localhost:3000/api/bookings/decline/${booking.appointment_id}`, {
-																		method: "PATCH",
-																	});
-																	setRecentBookings(prev => prev.filter(b => b.appointment_id !== booking.appointment_id));
-																}}
-															>
-																Decline
-															</button>
-														</>
-													)}
-													{/* If cancelled, just display a label */}
-													{booking.status === "Cancelled" && (
-														<span className="flex-1 px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs font-medium text-center">
-															Cancelled
-														</span>
-													)}
+															{booking.status !== "Confirmed" && booking.status !== "Cancelled" && (
+																<>
+																	<button
+																		className="flex-1 px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium hover:bg-green-600 hover:text-white transition-colors duration-150"
+																		onClick={async () => {
+																			if (!apptId) {
+																				showToast("Missing appointment id.", "error");
+																				return;
+																			}
+																			try {
+																				// Optimistic UI
+																				setRecentBookings(prev =>
+																					prev.map(b => getAppointmentId(b) === apptId ? { ...b, status: "Confirmed" } : b)
+																				);
+
+																				const res = await fetch(`http://localhost:3000/api/bookings/confirm/${apptId}`, {
+																					method: "PATCH",
+																					headers: { "Content-Type": "application/json" }
+																				});
+
+																				if (!res.ok) {
+																					// rollback if failed
+																					setRecentBookings(prev =>
+																						prev.map(b => getAppointmentId(b) === apptId ? { ...b, status: booking.status } : b)
+																					);
+																					const msg = await res.text();
+																					showToast(`Failed to confirm: ${msg || "server error"}`, "error");
+																					return;
+																				}
+
+																				showToast("Booking confirmed!", "success");
+
+																				// Refetch to be 100% consistent with DB
+																				const owner = JSON.parse(localStorage.getItem("carwashOwner"));
+																				if (owner?.id) {
+																					const appRes = await fetch(`http://localhost:3000/api/carwash-applications/by-owner/${owner.id}`);
+																					const appData = await appRes.json();
+																					if (appData?.applicationId) {
+																						const bookingsRes = await fetch(`http://localhost:3000/api/bookings/by-application/${appData.applicationId}`);
+																						const bookingsData = await bookingsRes.json();
+																						setRecentBookings(bookingsData);
+																					}
+																				}
+																			} catch {
+																				// rollback on error
+																				setRecentBookings(prev =>
+																					prev.map(b => getAppointmentId(b) === apptId ? { ...b, status: booking.status } : b)
+																				);
+																				showToast("Network error confirming booking.", "error");
+																			}
+																		}}
+																	>
+																		Confirm
+																	</button>
+																	<button
+																		className="flex-1 px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-medium hover:bg-red-600 hover:text-white transition-colors duration-150"
+																		onClick={async () => {
+																			if (!apptId) {
+																				showToast("Missing appointment id.", "error");
+																				return;
+																			}
+																			await fetch(`http://localhost:3000/api/bookings/decline/${apptId}`, { method: "PATCH" });
+																			setRecentBookings(prev => prev.filter(b => getAppointmentId(b) !== apptId));
+																			showToast("Booking declined", "success");
+																		}}
+																	>
+																		Decline
+																	</button>
+																</>
+															)}
+															{/* If cancelled, just display a label */}
+															{booking.status === "Cancelled" && (
+																<span className="flex-1 px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs font-medium text-center">
+																	Cancelled
+																</span>
+															)}
+														</div>
+													</div>
 												</div>
-											</div>
-										</div>
-									))}
+											);
+										});
+								})()}
 							</div>
 						</div>
 					</section>
@@ -579,6 +630,27 @@ export default function CarwashDashboard() {
 					</aside>
 				</div>
 			</main>
+
+			{/* Toast Notification */}
+			{toast.show && (
+  <div className="fixed top-6 right-6 z-50">
+    <div className={`px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 ${toast.type === "success" ? "bg-green-600 text-white" : "bg-red-600 text-white"} animate-slide-in`}>
+      <span className="font-semibold">{toast.message}</span>
+    </div>
+  </div>
+)}
+<style>{`
+  .animate-slide-in {
+    animation: slide-in 0.4s cubic-bezier(.36,.07,.19,.97) both;
+  }
+  @keyframes slide-in {
+    0% { opacity: 0; transform: translateY(-20px) scale(0.95);}
+    100% { opacity: 1; transform: translateY(0) scale(1);}
+  }
+`}</style>
 		</div>
 	);
 }
+
+// Helper to get a booking's appointment id regardless of field name differences
+const getAppointmentId = (b) => b?.appointment_id ?? b?.appointmentId ?? b?.id ?? null;

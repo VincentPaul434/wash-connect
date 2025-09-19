@@ -19,6 +19,7 @@ function CarwashShopPage() {
   const [shops, setShops] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeBooking, setActiveBooking] = useState(null) // <-- update to useState(null)
+  const [toast, setToast] = useState({ show: false, message: "" });
 
   useEffect(() => {
     const token = localStorage.getItem("token")
@@ -52,13 +53,20 @@ function CarwashShopPage() {
       fetch(`http://localhost:3000/api/bookings/customers/${userId}`)
         .then(res => res.json())
         .then(bookings => {
+          // Only consider active bookings
           const latest = bookings.find(
-            b => b.status !== "Declined" && b.status !== "Done"
+            b => b.status === "Pending" || b.status === "Confirmed"
           );
           setActiveBooking(latest || null);
         });
     }
   }, []);
+
+  // Toast handler
+  const showToast = (message) => {
+    setToast({ show: true, message });
+    setTimeout(() => setToast({ show: false, message: "" }), 3000);
+  };
 
   // Filter by location and search query
   const filteredShops = shops.filter(shop => {
@@ -86,6 +94,16 @@ function CarwashShopPage() {
 
   return (
     <div className="min-h-screen flex bg-[#c7f1ff]">
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className="fixed top-6 right-6 z-50">
+          <div className="bg-cyan-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-slide-in">
+            <FaCalendarAlt className="w-5 h-5" />
+            <span className="font-semibold">{toast.message}</span>
+          </div>
+        </div>
+      )}
+
       {/* Sidebar */}
       <div className="w-72 bg-white border-r border-gray-200 flex flex-col min-h-screen">
         <div className="flex items-center px-8 py-8 border-b border-gray-100">
@@ -124,7 +142,7 @@ function CarwashShopPage() {
               if (activeBooking) {
                 navigate("/booking-confirmation", { state: { appointment_id: activeBooking.appointment_id } });
               } else {
-                alert("No active appointment found.");
+                showToast("No active appointment found.");
               }
             }}
           >
@@ -268,6 +286,16 @@ function CarwashShopPage() {
           )}
         </div>
       </div>
+      {/* Toast animation styles */}
+      <style>{`
+        .animate-slide-in {
+          animation: slide-in 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes slide-in {
+          0% { opacity: 0; transform: translateY(-20px) scale(0.95);}
+          100% { opacity: 1; transform: translateY(0) scale(1);}
+        }
+      `}</style>
     </div>
   )
 }

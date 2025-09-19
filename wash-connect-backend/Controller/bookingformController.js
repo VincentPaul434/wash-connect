@@ -79,19 +79,19 @@ exports.getBookingsByCustomer = async (req, res) => {
 
 // Confirm a booking
 exports.confirmBooking = async (req, res) => {
-    const { appointmentId } = req.params;
-    try {
-        const [result] = await pool.query(
-            "UPDATE bookings SET status = 'Confirmed' WHERE appointment_id = ?",
-            [appointmentId]
-        );
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Booking not found' });
-        }
-        res.json({ success: true, status: 'Confirmed' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to confirm booking', details: error.message });
+  const { appointmentId } = req.params; // <-- use appointmentId
+  try {
+    const [result] = await pool.query(
+      "UPDATE bookings SET status = 'Confirmed' WHERE appointment_id = ?",
+      [appointmentId]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Booking not found" });
     }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to confirm booking" });
+  }
 };
 
 // Get confirmed bookings by application
@@ -116,6 +116,7 @@ exports.getConfirmedBookingsByApplication = async (req, res) => {
 exports.getBookingWithPersonnel = async (req, res) => {
     const { appointmentId } = req.params;
     try {
+        // Get booking and personnel info
         const [rows] = await pool.query(
             `SELECT 
                 b.*, 
@@ -128,21 +129,26 @@ exports.getBookingWithPersonnel = async (req, res) => {
                 p.last_name AS personnel_last_name, 
                 p.address AS personnel_address, 
                 p.email AS personnel_email, 
-                p.avatar AS personnel_avatar,
-                COALESCE(SUM(pay.amount), 0) AS amount_paid
+                p.avatar AS personnel_avatar
             FROM bookings b
             LEFT JOIN users u ON b.user_id = u.user_id
             LEFT JOIN personnel p ON b.personnelId = p.personnelId
-            LEFT JOIN payments pay ON b.appointment_id = pay.appointment_id
-            WHERE b.appointment_id = ?
-            GROUP BY b.appointment_id`,
+            WHERE b.appointment_id = ?`,
             [appointmentId]
         );
-        if (rows.length > 0) {
-            res.json(rows[0]);
-        } else {
-            res.status(404).json({ error: 'Booking not found' });
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Booking not found' });
         }
+        const booking = rows[0];
+
+        // Get all payments for this booking
+        const [payments] = await pool.query(
+            "SELECT * FROM payments WHERE appointment_id = ?",
+            [appointmentId]
+        );
+        booking.payments = payments; // Add payments array to booking
+
+        res.json(booking);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch booking', details: error.message });
     }
@@ -180,4 +186,24 @@ exports.cancelBooking = async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Failed to cancel booking', details: error.message });
     }
+};
+
+// Check if booking is pending
+exports.isBookingPending = async (req, res) => {
+    const { appointmentId } = req.params;
+    const [rows] = await pool.query(
+        "SELECT status, service_name, schedule_date, address FROM bookings WHERE appointment_id = ?",
+        [appointmentId]
+    );
+    if (rows.length === 0) {
+        return res.status(404).json({ error: "Booking not found" });
+    }
+    const isPending = rows[0].status === "Pending";
+    res.json({
+        pending: isPending,
+        status: rows[0].status,
+        service_name: rows[0].service_name,
+        schedule_date: rows[0].schedule_date,
+        address: rows[0].address
+    });
 };

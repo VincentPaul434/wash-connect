@@ -10,5 +10,6 @@ router.get('/bookings/confirmed/:applicationId', bookingformController.getConfir
 router.get('/bookings/with-personnel/:appointmentId', bookingformController.getBookingWithPersonnel);
 router.patch('/bookings/decline/:appointmentId', bookingformController.declineBooking);
 router.patch('/bookings/cancel/:appointmentId', bookingformController.cancelBooking);
+router.get('/bookings/is-pending/:appointmentId', bookingformController.isBookingPending);
 
 module.exports = router;

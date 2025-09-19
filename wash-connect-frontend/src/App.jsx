@@ -28,6 +28,7 @@ import Bookings from './carwashowners/booking';
 import AwaitingApproval from './carwashowners/AwaitingApproval';
 import BookingHistory from './carwashowners/bookinghistory';
 import EarningDashboard from './carwashowners/EarningDashboard';
+import BookingStatus from './customers/bookingStatus';
 
 function App() {
     return (
@@ -44,6 +45,7 @@ function App() {
                 <Route path="/booking-confirmation" element={<BookingConfirmation />} />
                 <Route path="/payment" element={<Payment />} />
                 <Route path="/banned" element={<BannedPage />} />
+                <Route path="/booking-status" element={<BookingStatus />} />
                 
 
                 {/* Carwash Owner Routes */}

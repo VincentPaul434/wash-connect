@@ -177,9 +177,12 @@ function BookingConfirmation() {
     setCanceling(false);
   };
 
-  const paidAmount = booking?.payments
-  ? booking.payments.reduce((sum, p) => sum + (p.amount || 0), 0)
-  : booking?.paid_amount || 0;
+  const paidAmount =
+  location.state?.paid_amount !== undefined
+    ? location.state.paid_amount
+    : booking?.payments
+      ? booking.payments.reduce((sum, p) => sum + (p.amount || 0), 0)
+      : booking?.paid_amount || 0;
 
   const remainingBalance = servicePrice - paidAmount;
 
@@ -468,7 +471,14 @@ function BookingConfirmation() {
                 </div>
               </div>
               <button className="w-full bg-green-500 text-white py-2 rounded font-semibold mb-2 hover:bg-green-600"
-                onClick={() => navigate("/payment", { state: { appointment_id } })}
+                onClick={() =>
+                  navigate("/payment", {
+                    state: {
+                      appointment_id,
+                      previousPayments: paidAmount // Pass the latest paid amount
+                    }
+                  })
+                }
               >
                 Pay Now 
               </button>

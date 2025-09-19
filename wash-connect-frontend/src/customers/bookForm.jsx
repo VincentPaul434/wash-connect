@@ -37,7 +37,6 @@ function BookForm() {
   const carwashName = location.state?.carwashName || "Carwash";
   const applicationId = location.state?.applicationId || "";
 
-  // Pre-fill form fields from location.state if available
   useEffect(() => {
     setForm((prev) => ({
       ...prev,
@@ -89,7 +88,7 @@ function BookForm() {
 
     const service = services[selectedIdx];
     const service_name = service.name;
-    const price = service.price; // Add this line
+    const price = service.price; 
     const schedule_date = form.date;
     const address = form.address;
     const message = form.message;
@@ -112,7 +111,7 @@ function BookForm() {
           address,
           message,
           personnelId: selectedPersonnelId,
-          price, // Pass the price to backend
+          price, 
         }),
       });
       const data = await res.json();
@@ -120,7 +119,7 @@ function BookForm() {
         throw new Error(data.error || "Failed to submit booking.");
       }
       // Navigate to booking confirmation with appointment_id from API response
-      navigate("/booking-confirmation", { state: { appointment_id: data.appointment_id } });
+      navigate("/booking-status", { state: { appointment_id: data.appointment_id } });
     } catch (error) {
       alert(error.message);
     } finally {
