@@ -134,17 +134,25 @@ function BookingConfirmation() {
     );
   }
 
+  // Coerce mixed inputs to number
+  const toNumber = (v) => {
+    if (v === null || v === undefined) return 0;
+    const cleaned = typeof v === "string" ? v.replace(/[, ]/g, "") : v;
+    const num = Number(cleaned);
+    return Number.isFinite(num) ? num : 0;
+  };
+
   const servicePrice =
-    booking.price !== null && booking.price !== undefined
-      ? booking.price
-      : bookingPrice(booking.service_name);
+    booking?.price !== null && booking?.price !== undefined
+      ? toNumber(booking.price)
+      : toNumber(bookingPrice(booking.service_name));
 
   const paidAmount =
     location.state?.paid_amount !== undefined
-      ? location.state.paid_amount
-      : booking?.payments
-        ? booking.payments.reduce((sum, p) => sum + (p.amount || 0), 0)
-        : booking?.paid_amount || 0;
+      ? toNumber(location.state.paid_amount)
+      : Array.isArray(booking?.payments)
+        ? booking.payments.reduce((sum, p) => sum + toNumber(p.amount), 0)
+        : toNumber(booking?.paid_amount);
 
   const remainingBalance = servicePrice - paidAmount;
 

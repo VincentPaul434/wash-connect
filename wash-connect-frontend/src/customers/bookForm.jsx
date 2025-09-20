@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, ArrowRight, User, Mail, Calendar, MapPin } from "lucide-react";
 
@@ -47,8 +47,10 @@ function BookForm() {
     }));
   }, [location.state]);
 
-  const [selectedIdx, setSelectedIdx] = useState(
-    services.findIndex((s) => s.name === selectedServiceName)
+  // Use the selected service from the booking page; no re-selection here
+  const selectedService = useMemo(
+    () => services.find((s) => s.name === selectedServiceName) || services[0],
+    [selectedServiceName]
   );
 
   const [form, setForm] = useState({
@@ -71,14 +73,6 @@ function BookForm() {
     }));
   };
 
-  const handlePrev = () => {
-    setSelectedIdx((idx) => (idx === 0 ? services.length - 1 : idx - 1));
-  };
-
-  const handleNext = () => {
-    setSelectedIdx((idx) => (idx === services.length - 1 ? 0 : idx + 1));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -86,9 +80,9 @@ function BookForm() {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     const user_id = user.id || user.user_id || "";
 
-    const service = services[selectedIdx];
-    const service_name = service.name;
-    const price = service.price; 
+    // Use the read-only selected service
+    const service_name = selectedService.name;
+    const price = selectedService.price;
     const schedule_date = form.date;
     const address = form.address;
     const message = form.message;
@@ -111,7 +105,7 @@ function BookForm() {
           address,
           message,
           personnelId: selectedPersonnelId,
-          price, 
+          price,
         }),
       });
       const data = await res.json();
@@ -187,59 +181,27 @@ function BookForm() {
             <ArrowLeft size={18} />
           </button>
           <h1 className="text-3xl font-semibold mb-2 mt-2 text-center w-full">
-            You have booked <span className="text-blue-600">{services[selectedIdx].name}</span> in <span className="text-cyan-600">{carwashName}</span>
+            You have booked <span className="text-blue-600">{selectedService.name}</span> in <span className="text-cyan-600">{carwashName}</span>
           </h1>
           <p className="mb-6 text-gray-700 text-center w-full">
             Please review your selected service and fill out the booking form below.
           </p>
-          {/* Service carousel */}
-          <div className="flex items-center justify-center gap-2 mb-8">
-            <button
-              className="p-1 rounded-full hover:bg-gray-100"
-              onClick={handlePrev}
-              aria-label="Previous"
-              type="button"
-            >
-              <ArrowLeft size={16} />
-            </button>
-            {services.map((service, idx) => (
-              <div key={service.name} className="flex flex-col items-center mx-1">
-                <div
-                  className={`rounded-full border-4 ${
-                    idx === selectedIdx
-                      ? "border-blue-600"
-                      : "border-transparent"
-                  } overflow-hidden w-20 h-20 flex items-center justify-center transition-all`}
-                  style={{
-                    boxShadow: idx === selectedIdx ? "0 0 0 2px #3b82f6" : undefined,
-                  }}
-                >
-                  <img
-                    src={service.img}
-                    alt={service.name}
-                    className="object-cover w-full h-full"
-                  />
-                </div>
-                <span
-                  className={`mt-2 text-sm ${
-                    idx === selectedIdx
-                      ? "font-semibold border-b-2 border-blue-600"
-                      : "text-gray-700"
-                  }`}
-                >
-                  {service.name}
-                </span>
-              </div> 
-            ))}
-            <button
-              className="p-1 rounded-full hover:bg-gray-100"
-              onClick={handleNext}
-              aria-label="Next"
-              type="button"
-            >
-              <ArrowRight size={16} />
-            </button>
+
+          {/* REPLACE carousel with a read-only summary of the chosen service */}
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <div className="flex items-center gap-4 border rounded-lg p-3 bg-white">
+              <img
+                src={selectedService.img}
+                alt={selectedService.name}
+                className="w-20 h-20 rounded object-cover"
+              />
+              <div>
+                <div className="font-semibold">{selectedService.name}</div>
+                <div className="text-gray-700">Price: ₱{selectedService.price}</div>
+              </div>
+            </div>
           </div>
+
           {/* Booking Form */}
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="flex gap-4">
