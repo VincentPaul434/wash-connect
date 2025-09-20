@@ -409,14 +409,8 @@ export default function CarwashDashboard() {
 								)}
 								{/* FIX: Define today here */}
 								{(() => {
-									const today = new Date().toISOString().slice(0, 10); // <-- Move this here
 									return recentBookings
 										.filter(b => b.status !== "Declined" && b.status !== "Cancelled")
-										.filter(b => {
-											// Ensure schedule_date is in YYYY-MM-DD format
-											const bookingDate = new Date(b.schedule_date).toISOString().slice(0, 10);
-											return bookingDate === today;
-										})
 										.map((booking) => {
 											const apptId = getAppointmentId(booking);
 											return (

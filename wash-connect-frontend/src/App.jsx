@@ -29,6 +29,7 @@ import AwaitingApproval from './carwashowners/AwaitingApproval';
 import BookingHistory from './carwashowners/bookinghistory';
 import EarningDashboard from './carwashowners/EarningDashboard';
 import BookingStatus from './customers/bookingStatus';
+import PersonnelDetails from './carwashowners/PersonnelDetails';
 
 function App() {
     return (
@@ -61,6 +62,8 @@ function App() {
                 <Route path="/awaiting-approval" element={<AwaitingApproval />} />
                 <Route path="/booking-history" element={<BookingHistory />} />
                 <Route path="/earning-dashboard" element={<EarningDashboard />} />
+                <Route path="/personnel-details" element={<PersonnelDetails />} />
+                <Route path="/personnel-details/:personnelId" element={<PersonnelDetails />} />
 
                 {/* Admin Routes */}
                 <Route path="/admin-register" element={<AdminRegister />} />

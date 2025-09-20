@@ -25,11 +25,15 @@ function PersonnelList() {
   }, []);
 
   const filtered = personnel
-    .filter(p =>
-      (p.name || "").toLowerCase().includes(search.toLowerCase()) ||
-      (p.role || "").toLowerCase().includes(search.toLowerCase()) ||
-      (p.email || "").toLowerCase().includes(search.toLowerCase())
-    )
+    .filter(p => {
+      const fullName = `${p.first_name || ""} ${p.last_name || ""}`.trim();
+      const q = search.toLowerCase();
+      return (
+        fullName.toLowerCase().includes(q) ||
+        (p.role || "").toLowerCase().includes(q) ||
+        (p.email || "").toLowerCase().includes(q)
+      );
+    })
     .filter(p => filter === "All" || p.type === filter);
 
   const handleLogout = () => {
@@ -197,16 +201,16 @@ function PersonnelList() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filtered.map((p, i) => (
+              {filtered.map((p) => (
                 <div
-                  key={i}
+                  key={p.personnelId}
                   className="bg-white rounded-xl border border-gray-300 p-4 flex flex-col gap-2 relative"
                 >
                   <div className="flex items-center gap-3">
                     <img
                       src={
                         p.avatar ||
-                        `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name || "")}`
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(`${p.first_name || ""} ${p.last_name || ""}`.trim())}`
                       }
                       alt=""
                       className="w-10 h-10 rounded-full object-cover border"
@@ -236,7 +240,10 @@ function PersonnelList() {
                     </div>
                   </div>
                   <div className="flex gap-2 mt-3">
-                    <button className="flex-1 bg-blue-500 text-white rounded px-3 py-1 text-xs font-medium hover:bg-blue-600">
+                    <button
+                      className="flex-1 bg-blue-500 text-white rounded px-3 py-1 text-xs font-medium hover:bg-blue-600"
+                      onClick={() => navigate(`/personnel-details/${p.personnelId}`, { state: { personnel: p } })}
+                    >
                       View Details
                     </button>
                     <button className="flex-1 bg-yellow-400 text-gray-800 rounded px-3 py-1 text-xs font-medium hover:bg-yellow-500"

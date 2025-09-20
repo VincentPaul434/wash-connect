@@ -21,21 +21,21 @@ function Payment() {
 
   // Booking details
   const [booking, setBooking] = useState(null);
-  const [subtotal, setSubtotal] = useState(0);
-  const [previousPayments, setPreviousPayments] = useState(0);
+  const [subtotal, setSubtotal] = useState(location.state?.subtotal || 0);
+  const [previousPayments, setPreviousPayments] = useState(location.state?.previousPayments || 0);
 
   useEffect(() => {
     if (appointment_id) {
       fetch(`http://localhost:3000/api/bookings/with-personnel/${appointment_id}`)
         .then(res => res.json())
         .then(data => {
-          console.log("Booking object:", data); // <-- Add this line
           setBooking(data);
-          setSubtotal(data.price || 0);
-          setPreviousPayments(data.amount_paid || 0);
+          // Only update if not passed from location.state
+          if (!location.state?.subtotal) setSubtotal(data.price || 0);
+          if (!location.state?.previousPayments) setPreviousPayments(data.amount_paid || 0);
         });
     }
-  }, [appointment_id]);
+  }, [appointment_id, location.state]);
 
   // Calculate remaining balance
   const enteredAmount = parseFloat(amount) || 0;
@@ -79,7 +79,13 @@ function Payment() {
 
       if (res.ok) {
         alert("Payment successful!");
-        navigate(`/booking-confirmation`); // Redirect to booking confirmation
+        navigate(`/booking-confirmation`, {
+          state: {
+            appointment_id,
+            paid_amount: Number(previousPayments) + Number(amount),
+            subtotal, // Pass the price/subtotal
+          },
+        });
       } else {
         const errorData = await res.json();
         alert("Payment failed: " + (errorData.error || "Please try again."));

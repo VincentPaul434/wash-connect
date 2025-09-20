@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Mail, Calendar, User, MapPin, Phone } from "lucide-react";
-import { FaStar } from "react-icons/fa";
+import { FaEnvelope, FaUser, FaStar, FaHeart, FaCalendarAlt, FaSignOutAlt } from "react-icons/fa";
 import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 
@@ -21,12 +21,7 @@ function BookingConfirmation() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Only use state for appointment_id
   const appointment_id = location.state?.appointment_id;
-
-  // Debug log
-  // console.log("location.state:", location.state);
-  // console.log("appointment_id:", appointment_id);
 
   const [booking, setBooking] = useState(null);
   const [canceling, setCanceling] = useState(false);
@@ -53,7 +48,7 @@ function BookingConfirmation() {
   // Fetch personnel if not already set
   useEffect(() => {
     let ignore = false;
-    const ownerId = booking && booking.owner_id;
+    const ownerId = booking ? booking.owner_id : undefined;
     if (ownerId && !booking.personnelId) {
       fetch(`http://localhost:3000/api/personnel/by-owner/${ownerId}`)
         .then((res) => res.json())
@@ -73,91 +68,85 @@ function BookingConfirmation() {
         });
     }
     return () => { ignore = true; };
-  }, [booking && booking.owner_id]);
+  }, [booking, booking?.owner_id]);
 
-  // (Removed unused fetchBookingDetails function)
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const userId = user.id || user.user_id;
+    if (userId) {
+      fetch(`http://localhost:3000/api/bookings/customers/${userId}`)
+        .then(res => res.json())
+        .then(bookings => {
+          const latest = bookings.find(
+            b => b.status !== "Declined" && b.status !== "Done" && b.status !== "Cancelled"
+          );
+          setActiveBooking(latest || null);
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
+    }
+  }, []);
 
-  // Add these states for rating
-    const [rating, setRating] = useState(0);
-    const [hover, setHover] = useState(0);
-    const [comment, setComment] = useState("");
-    const [submitting, setSubmitting] = useState(false);
-    const [success, setSuccess] = useState(false);
-  
-    useEffect(() => {
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
-      const userId = user.id || user.user_id;
-      if (userId) {
-        fetch(`http://localhost:3000/api/bookings/customers/${userId}`)
-          .then(res => res.json())
-          .then(bookings => {
-            const latest = bookings.find(
-              b => b.status !== "Declined" && b.status !== "Done" && b.status !== "Cancelled"
-            );
-            setActiveBooking(latest || null);
-            setLoading(false);
-          });
-      } else {
-        setLoading(false);
-      }
-    }, []);
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#c8f1ff]">
+        <div className="text-gray-500 text-xl">Loading...</div>
+      </div>
+    );
+  }
 
-    if (loading) {
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-[#c8f1ff]">
-          <div className="text-gray-500 text-xl">Loading...</div>
+  if (!activeBooking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#c8f1ff]">
+        <div className="bg-white rounded-xl shadow p-8 flex flex-col items-center">
+          <h2 className="text-2xl font-semibold mb-2 text-black">No Appointments Booked</h2>
+          <p className="mb-6 text-gray-700 text-center">
+            You currently have no active appointments. Book a service to get started!
+          </p>
+          <button
+            className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 font-semibold"
+            onClick={() => navigate("/popular-carwash")}
+          >
+            Book Now
+          </button>
         </div>
-      );
-    }
+      </div>
+    );
+  }
 
-    if (!activeBooking) {
-      // Show "No Appointments Booked" message and Book Now button
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-[#c8f1ff]">
-          <div className="bg-white rounded-xl shadow p-8 flex flex-col items-center">
-            <h2 className="text-2xl font-semibold mb-2 text-black">No Appointments Booked</h2>
-            <p className="mb-6 text-gray-700 text-center">
-              You currently have no active appointments. Book a service to get started!
-            </p>
-            <button
-              className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 font-semibold"
-              onClick={() => navigate("/popular-carwash")}
-            >
-              Book Now
-            </button>
-          </div>
+  if (!booking || booking.status !== "Confirmed") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#c8f1ff]">
+        <div className="bg-white rounded-xl shadow p-8 flex flex-col items-center">
+          <h2 className="text-2xl font-semibold mb-2 text-black">Booking Not Confirmed</h2>
+          <p className="mb-6 text-gray-700 text-center">
+            Your booking is not yet confirmed. Please wait for confirmation or check your booking status.
+          </p>
+          <button
+            className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 font-semibold"
+            onClick={() => navigate("/popular-carwash")}
+          >
+            Back to Carwash Shops
+          </button>
         </div>
-      );
-    }
-  
-    const servicePrice =
-      booking.price !== null && booking.price !== undefined
-        ? booking.price
-        : bookingPrice(booking.service_name);
+      </div>
+    );
+  }
 
-  // Get customer name
-  const customerName = `${booking.customer_first_name || ""} ${booking.customer_last_name || ""}`.trim();
+  const servicePrice =
+    booking.price !== null && booking.price !== undefined
+      ? booking.price
+      : bookingPrice(booking.service_name);
 
-  // Submit rating handler
-  const handleRatingSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    try {
-      await fetch(`http://localhost:3000/api/bookings/rate/${appointment_id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          rating,
-          comment,
-          customer_name: customerName,
-        }),
-      });
-      setSuccess(true);
-    } catch  {
-      alert("Failed to submit rating. Please try again.");
-    }
-    setSubmitting(false);
-  };
+  const paidAmount =
+    location.state?.paid_amount !== undefined
+      ? location.state.paid_amount
+      : booking?.payments
+        ? booking.payments.reduce((sum, p) => sum + (p.amount || 0), 0)
+        : booking?.paid_amount || 0;
+
+  const remainingBalance = servicePrice - paidAmount;
 
   const handleCancelBooking = async () => {
     if (!appointment_id) return;
@@ -177,15 +166,6 @@ function BookingConfirmation() {
     setCanceling(false);
   };
 
-  const paidAmount =
-  location.state?.paid_amount !== undefined
-    ? location.state.paid_amount
-    : booking?.payments
-      ? booking.payments.reduce((sum, p) => sum + (p.amount || 0), 0)
-      : booking?.paid_amount || 0;
-
-  const remainingBalance = servicePrice - paidAmount;
-
   return (
     <div className="min-h-screen flex bg-[#c8f1ff]">
       {/* Sidebar */}
@@ -198,38 +178,49 @@ function BookingConfirmation() {
         </div>
         <nav className="flex-1 px-4 py-6 space-y-2">
           <div className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer">
-            <Mail className="mr-3 w-5 h-5" />
+            <FaEnvelope className="mr-3 w-5 h-5" />
             Inbox
             <span className="ml-auto bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-sm">0</span>
           </div>
-          <div className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
-                onClick={() => navigate("/user-dashboard")}
+          <div
+            className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
+            onClick={() => navigate('/user-dashboard')}
           >
-            <User className="mr-3 w-5 h-5" />
+            <FaUser className="mr-3 w-5 h-5" />
             Account
           </div>
-          <div className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
-            onClick={() => navigate("/popular-carwash")}
+          <div
+            className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
+            onClick={() => navigate('/popular-carwash')}
           >
-            <span className="mr-3">★</span>
+            <FaStar className="mr-3 w-5 h-5" />
             Carwash Shops
           </div>
-          <div className="flex items-center w-full px-4 py-3 rounded-lg bg-cyan-100 text-cyan-700 font-semibold cursor-pointer"
-            onClick={() => navigate("/book")}
+          <div
+            className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
+            onClick={() => navigate('/book')}
           >
-            <span className="text-xl">♡</span>
+            <FaHeart className="mr-3 w-5 h-5" />
             Bookings
           </div>
           <hr className="my-4" />
-          <div className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer">
-            <Calendar className="mr-3 w-5 h-5" />
+          <div
+            className="flex items-center w-full px-4 py-3 rounded-lg bg-cyan-100 text-cyan-700 font-semibold cursor-pointer"
+            onClick={() => navigate("/booking-confirmation", { state: { appointment_id } })}
+          >
+            <FaCalendarAlt className="mr-3 w-5 h-5" />
             Appointment
           </div>
           <div className="mt-auto px-4 pt-8">
-            <div className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
-              onClick={() => navigate("/login")}
+            <div
+              className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
+              onClick={() => {
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+                navigate("/login");
+              }}
             >
-              <span className="text-xl">📁</span>
+              <FaSignOutAlt className="mr-3 w-5 h-5" />
               LogOut
             </div>
           </div>
@@ -376,56 +367,6 @@ function BookingConfirmation() {
                 <Phone className="w-4 h-4" /> 09949066002
               </button>
             </div>
-            {/* --- Rating and Comment Section --- */}
-            <div className="bg-white rounded-xl shadow p-4 border border-gray-200">
-              <form onSubmit={handleRatingSubmit}>
-                <div className="font-semibold mb-2">Rate Our Service</div>
-                <div className="flex items-center gap-1 mb-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <FaStar
-                      key={star}
-                      size={28}
-                      className={`cursor-pointer transition ${
-                        (hover || rating) >= star ? "text-yellow-400" : "text-gray-300"
-                      }`}
-                      onClick={() => setRating(star)}
-                      onMouseEnter={() => setHover(star)}
-                      onMouseLeave={() => setHover(0)}
-                      data-testid={`star-${star}`}
-                    />
-                  ))}
-                  {rating > 0 && (
-                    <span className="ml-2 text-sm text-gray-600">
-                      {rating} star{rating > 1 ? "s" : ""}
-                    </span>
-                  )}
-                </div>
-                <textarea
-                  className="w-full border rounded px-3 py-2 mb-2"
-                  placeholder="Leave a comment about your experience..."
-                  value={comment}
-                  onChange={e => setComment(e.target.value)}
-                  rows={3}
-                  required
-                />
-                <div className="text-xs text-gray-500 mb-2">
-                  Your review will be posted as <b>{customerName || "Customer"}</b>
-                </div>
-                <button
-                  type="submit"
-                  className="bg-blue-600 text-white px-6 py-2 rounded font-semibold hover:bg-blue-700"
-                  disabled={submitting || rating === 0}
-                >
-                  {submitting ? "Submitting..." : "Submit Review"}
-                </button>
-                {success && (
-                  <div className="text-green-600 mt-2 font-semibold">
-                    Thank you for your feedback!
-                  </div>
-                )}
-              </form>
-            </div>
-            {/* --- End Rating and Comment Section --- */}
           </div>
           {/* Right: Payment Summary */}
           <div className="w-full md:w-80">
@@ -475,7 +416,8 @@ function BookingConfirmation() {
                   navigate("/payment", {
                     state: {
                       appointment_id,
-                      previousPayments: paidAmount // Pass the latest paid amount
+                      previousPayments: paidAmount,
+                      subtotal: servicePrice
                     }
                   })
                 }
