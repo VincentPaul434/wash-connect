@@ -35,7 +35,7 @@ function PersonnelAssign() {
         } else {
           setServices([]);
         }
-      } catch (e) {
+      } catch {
         setError("Failed to load services.");
         setServices([]);
       } finally {

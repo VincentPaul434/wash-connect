@@ -15,14 +15,40 @@ function PersonnelList() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Fetch personnel for this carwash branch
-    const owner = JSON.parse(localStorage.getItem("carwashOwner"));
-    if (!owner || !owner.id) return;
-    fetch(`http://localhost:3000/api/personnel/by-owner/${owner.id}`)
-      .then(res => res.json())
-      .then(setPersonnel)
-      .catch(() => setPersonnel([]));
-  }, []);
+    const controller = new AbortController();
+    const load = async () => {
+      try {
+        const owner = JSON.parse(localStorage.getItem("carwashOwner") || "{}");
+        const token = localStorage.getItem("token");
+        if (!owner?.id || !token) {
+          navigate("/carwash-login");
+          return;
+        }
+
+        const res = await fetch(`http://localhost:3000/api/personnel/by-owner/${owner.id}`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          signal: controller.signal,
+        });
+
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem("carwashOwner");
+          localStorage.removeItem("token");
+          navigate("/carwash-login");
+          return;
+        }
+
+        const data = await res.json();
+        setPersonnel(Array.isArray(data) ? data : []);
+      } catch (err) {
+        if (err.name !== "AbortError") setPersonnel([]);
+      }
+    };
+    load();
+    return () => controller.abort();
+  }, [navigate]);
 
   const filtered = personnel
     .filter(p => {
