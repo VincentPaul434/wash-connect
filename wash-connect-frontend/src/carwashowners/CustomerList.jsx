@@ -104,7 +104,7 @@ function CustomerList() {
             <FaRegCheckSquare className="text-lg" />
             <span>Booking History</span>
           </div>
-          <div className="flex items-center gap-2 mt-2 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200">
+          <div className="flex items-center gap-2 mt-2 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200" onClick={() => navigate('/earning-dashboard')}>
             <FaTrophy className="text-lg" />
             <span>Earnings Dashboard</span>
           </div>

@@ -1,42 +1,47 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, ArrowRight, User, Mail, Calendar, MapPin } from "lucide-react";
+import { ArrowLeft, User, Mail, Calendar, MapPin } from "lucide-react";
 
-const services = [
-  {
-    name: "Basic Car Wash",
-    img: "https://images.pexels.com/photos/372810/pexels-photo-372810.jpeg?auto=compress&w=400&h=300&fit=crop",
-    price: 400,
-  },
-  {
-    name: "Full Detailing",
-    img: "https://images.pexels.com/photos/3806273/pexels-photo-3806273.jpeg?auto=compress&w=400&h=300&fit=crop",
-    price: 1000,
-  },
-  {
-    name: "Underwash",
-    img: "https://images.pexels.com/photos/48889/pexels-photo-48889.jpeg?auto=compress&w=400&h=300&fit=crop",
-    price: 200,
-  },
-  {
-    name: "Ceramic Coating",
-    img: "https://images.pexels.com/photos/170782/pexels-photo-170782.jpeg?auto=compress&w=400&h=300&fit=crop",
-    price: 1000,
-  },
-  {
-    name: "Basic Motowash",
-    img: "https://images.pexels.com/photos/372810/pexels-photo-372810.jpeg?auto=compress&w=400&h=300&fit=crop",
-    price: 50,
-  },
-];
+// Helpers
+const placeholderImg = "https://via.placeholder.com/160?text=Service";
+const normalizeImg = (raw) => {
+  if (!raw) return placeholderImg;
+  return String(raw).startsWith("http")
+    ? raw
+    : `http://localhost:3000/${String(raw).replace(/^\/?/, "")}`;
+};
 
 function BookForm() {
   const navigate = useNavigate();
   const location = useLocation();
-  const selectedServiceName = location.state?.serviceName || services[0].name;
-  const carwashName = location.state?.carwashName || "Carwash";
-  const applicationId = location.state?.applicationId || "";
 
+  // Passed from BookingPage
+  const carwashName = location.state?.carwashName || "Carwash";
+  const applicationId =
+    location.state?.applicationId ||
+    localStorage.getItem("selectedApplicationId") ||
+    "";
+  const selectedServiceName = location.state?.serviceName || "Selected Service";
+  const statePrice = location.state?.servicePrice ?? null;
+  const stateImg = location.state?.serviceImg ?? null;
+
+  // Form state
+  const [form, setForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    address: "",
+    date: "",
+    message: "",
+  });
+  const [submitting, setSubmitting] = useState(false);
+
+  // Data
+  const [personnelList, setPersonnelList] = useState([]);
+  const [selectedPersonnelId, setSelectedPersonnelId] = useState("");
+  const [fetchedServices, setFetchedServices] = useState([]);
+
+  // Prefill from navigation state (user profile info)
   useEffect(() => {
     setForm((prev) => ({
       ...prev,
@@ -47,30 +52,72 @@ function BookForm() {
     }));
   }, [location.state]);
 
-  // Use the selected service from the booking page; no re-selection here
-  const selectedService = useMemo(
-    () => services.find((s) => s.name === selectedServiceName) || services[0],
-    [selectedServiceName]
-  );
+  // Fetch personnel (via application -> owner -> personnel)
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!applicationId) {
+          setPersonnelList([]);
+          return;
+        }
+        const res = await fetch(
+          `http://localhost:3000/api/carwash-applications/by-application/${applicationId}`
+        );
+        const app = await res.json();
+        if (app?.ownerId) {
+          const personnelRes = await fetch(
+            `http://localhost:3000/api/personnel/by-owner/${app.ownerId}`
+          );
+          const personnelData = await personnelRes.json();
+          setPersonnelList(Array.isArray(personnelData) ? personnelData : []);
+        } else {
+          setPersonnelList([]);
+        }
+      } catch {
+        setPersonnelList([]);
+      }
+    })();
+  }, [applicationId]);
 
-  const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    address: "",
-    date: "",
-    message: "",
-  });
+  // Fetch services (optional, to fill price/image if not passed via state)
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!applicationId) {
+          setFetchedServices([]);
+          return;
+        }
+        const res = await fetch(
+          `http://localhost:3000/api/services/by-application/${applicationId}`
+        );
+        const rows = (await res.json()) || [];
+        const mapped = rows.map((s) => ({
+          name: s.name,
+          price: Number(s.price ?? 0),
+          img: normalizeImg(s.image_url),
+        }));
+        setFetchedServices(mapped);
+      } catch {
+        setFetchedServices([]);
+      }
+    })();
+  }, [applicationId]);
 
-  const [submitting, setSubmitting] = useState(false);
-  const [personnelList, setPersonnelList] = useState([]);
-  const [selectedPersonnelId, setSelectedPersonnelId] = useState("");
+  // Resolve selected service (name from state; price/img from state or fetched list)
+  const selectedService = useMemo(() => {
+    const fromApi = fetchedServices.find((s) => s.name === selectedServiceName);
+    return {
+      name: selectedServiceName,
+      price:
+        Number.isFinite(Number(statePrice)) && statePrice !== null
+          ? Number(statePrice)
+          : Number(fromApi?.price ?? 0),
+      img: stateImg ? normalizeImg(stateImg) : fromApi?.img || placeholderImg,
+    };
+  }, [selectedServiceName, statePrice, stateImg, fetchedServices]);
 
   const handleChange = (e) => {
-    setForm((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = async (e) => {
@@ -80,9 +127,8 @@ function BookForm() {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     const user_id = user.id || user.user_id || "";
 
-    // Use the read-only selected service
     const service_name = selectedService.name;
-    const price = selectedService.price;
+    const price = Number(selectedService.price ?? 0);
     const schedule_date = form.date;
     const address = form.address;
     const message = form.message;
@@ -109,10 +155,7 @@ function BookForm() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to submit booking.");
-      }
-      // Navigate to booking confirmation with appointment_id from API response
+      if (!res.ok) throw new Error(data.error || "Failed to submit booking.");
       navigate("/booking-status", { state: { appointment_id: data.appointment_id } });
     } catch (error) {
       alert(error.message);
@@ -121,40 +164,14 @@ function BookForm() {
     }
   };
 
-  // Fetch personnel when form loads
-  useEffect(() => {
-    async function fetchOwnerIdAndPersonnel() {
-      if (applicationId) {
-        const res = await fetch(
-          `http://localhost:3000/api/carwash-applications/by-application/${applicationId}`
-        );
-        const app = await res.json();
-        if (app.ownerId) {
-          const personnelRes = await fetch(
-            `http://localhost:3000/api/personnel/by-owner/${app.ownerId}`
-          );
-          const personnelData = await personnelRes.json();
-          setPersonnelList(personnelData);
-        } else {
-          setPersonnelList([]);
-        }
-      }
-    }
-    fetchOwnerIdAndPersonnel();
-  }, [applicationId]);
-
-  // Define appointment_id from location.state if available
+  // Optional: support refresh scenario where appointment_id could be passed
   const appointment_id = location.state?.appointment_id;
-
   useEffect(() => {
     if (!appointment_id) {
-      // fallback: fetch latest booking for this user
       const user = JSON.parse(localStorage.getItem("user") || "{}");
       const userId = user.id || user.user_id || "";
       if (userId) {
-        fetch(`http://localhost:3000/api/bookings/customers/${userId}`).then(
-          (res) => res.json()
-        );
+        fetch(`http://localhost:3000/api/bookings/customers/${userId}`).then((r) => r.json());
       }
     }
   }, [appointment_id]);
@@ -180,24 +197,30 @@ function BookForm() {
           >
             <ArrowLeft size={18} />
           </button>
+
           <h1 className="text-3xl font-semibold mb-2 mt-2 text-center w-full">
-            You have booked <span className="text-blue-600">{selectedService.name}</span> in <span className="text-cyan-600">{carwashName}</span>
+            You have booked <span className="text-blue-600">{selectedService.name}</span> in{" "}
+            <span className="text-cyan-600">{carwashName}</span>
           </h1>
           <p className="mb-6 text-gray-700 text-center w-full">
             Please review your selected service and fill out the booking form below.
           </p>
 
-          {/* REPLACE carousel with a read-only summary of the chosen service */}
+          {/* Service summary */}
           <div className="flex items-center justify-center gap-4 mb-8">
             <div className="flex items-center gap-4 border rounded-lg p-3 bg-white">
               <img
                 src={selectedService.img}
                 alt={selectedService.name}
                 className="w-20 h-20 rounded object-cover"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = placeholderImg;
+                }}
               />
               <div>
                 <div className="font-semibold">{selectedService.name}</div>
-                <div className="text-gray-700">Price: ₱{selectedService.price}</div>
+                <div className="text-gray-700">Price: ₱{Number(selectedService.price ?? 0)}</div>
               </div>
             </div>
           </div>
@@ -251,6 +274,7 @@ function BookForm() {
                 </div>
               </div>
             </div>
+
             <div className="flex gap-4">
               <div className="flex-1">
                 <label className="block mb-1 text-gray-700">Address</label>
@@ -282,23 +306,25 @@ function BookForm() {
                 </div>
               </div>
             </div>
+
             <div className="flex-1">
               <label className="block mb-1 text-gray-700">Select Carwash Boy</label>
               <select
                 name="personnelId"
                 value={selectedPersonnelId}
-                onChange={e => setSelectedPersonnelId(e.target.value)}
+                onChange={(e) => setSelectedPersonnelId(e.target.value)}
                 className="w-full border rounded px-3 py-2"
                 required
               >
                 <option value="">Select...</option>
-                {personnelList.map(p => (
+                {personnelList.map((p) => (
                   <option key={p.personnelId} value={p.personnelId}>
                     {p.first_name} {p.last_name}
                   </option>
                 ))}
               </select>
             </div>
+
             <div>
               <label className="block mb-1 text-gray-700">Additional message</label>
               <textarea
@@ -309,6 +335,7 @@ function BookForm() {
                 className="w-full border border-gray-300 rounded p-3 min-h-[80px] focus:outline-none"
               />
             </div>
+
             <button
               type="submit"
               className="w-full mt-4 bg-[#b3e0ff] hover:bg-[#90c8e8] text-black text-2xl font-medium py-2 rounded border border-gray-300 transition"
@@ -319,7 +346,8 @@ function BookForm() {
           </form>
         </div>
       </div>
-      {/* Backdrop overlay for better readability */}
+
+      {/* Backdrop overlay */}
       <div className="absolute inset-0 bg-[#c8f1ff] opacity-60 pointer-events-none z-0" />
     </div>
   );

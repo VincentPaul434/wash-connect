@@ -20,7 +20,9 @@ exports.getServicesByApplication = async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT serviceId, applicationId, name, price, description, duration_minutes, image_url, is_active
-       FROM services WHERE applicationId = ? AND is_active = 1 ORDER BY name`,
+       FROM services
+       WHERE applicationId = ? AND is_active = 1
+       ORDER BY name`,
       [applicationId]
     );
     res.json(rows);
@@ -59,5 +61,19 @@ exports.deleteService = async (req, res) => {
     res.json({ message: 'Deleted' });
   } catch (e) {
     res.status(500).json({ error: 'Failed to delete service', details: e.message });
+  }
+};
+
+exports.uploadServiceImage = async (req, res) => {
+  const { serviceId } = req.params;
+  if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+  const publicPath = `/uploads/services/${req.file.filename}`;
+
+  try {
+    const [r] = await pool.query('UPDATE services SET image_url = ? WHERE serviceId = ?', [publicPath, serviceId]);
+    if (!r.affectedRows) return res.status(404).json({ error: 'Service not found' });
+    res.json({ message: 'Image uploaded', image_url: publicPath });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to save image', details: e.message });
   }
 };

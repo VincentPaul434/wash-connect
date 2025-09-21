@@ -44,6 +44,9 @@ export default function CarwashDashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [profileUploaded, setProfileUploaded] = useState(false);
     const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+    const [showAddSvc, setShowAddSvc] = useState(false);
+    const [svcForm, setSvcForm] = useState({ name: "", price: "", description: "" });
+    const [svcFile, setSvcFile] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -99,6 +102,66 @@ export default function CarwashDashboard() {
 	const showToast = (message, type = "success") => {
 		setToast({ show: true, message, type });
 		setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
+	};
+
+	const submitService = async (e) => {
+		e.preventDefault();
+		if (!carwashData?.applicationId) {
+			showToast("Missing applicationId", "error");
+			return;
+		}
+		const name = svcForm.name.trim();
+		const price = Number(String(svcForm.price).replace(/[, ]/g, "")) || 0;
+		if (!name) {
+			showToast("Service name is required", "error");
+			return;
+		}
+		try {
+			const res = await fetch("http://localhost:3000/api/services", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					applicationId: carwashData.applicationId,
+					name, price,
+					description: svcForm.description || null,
+				}),
+			});
+			if (!res.ok) {
+				const msg = await res.text();
+				showToast(`Failed to add service: ${msg || "server error"}`, "error");
+				return;
+			}
+			const { serviceId } = await res.json();
+
+			let image_url = null;
+			if (svcFile) {
+				const fd = new FormData();
+				fd.append("image", svcFile);
+				const imgRes = await fetch(`http://localhost:3000/api/services/${serviceId}/image`, {
+					method: "POST",
+					body: fd,
+				});
+				if (imgRes.ok) {
+					const imgData = await imgRes.json();
+					image_url = imgData.image_url || null;
+				}
+			}
+
+			setServices(prev => [...prev, {
+				serviceId,
+				applicationId: carwashData.applicationId,
+				name, price,
+				description: svcForm.description || null,
+				image_url,
+				is_active: 1,
+			}]);
+			setSvcForm({ name: "", price: "", description: "" });
+			setSvcFile(null);
+			setShowAddSvc(false);
+			showToast("Service added", "success");
+		} catch {
+			showToast("Network error", "error");
+		}
 	};
 
 	if (isLoading) {
@@ -174,7 +237,7 @@ export default function CarwashDashboard() {
                 <span>Booking History</span>
               </div>
               
-              <div className="flex items-center gap-2 mt-2 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200">
+              <div className="flex items-center gap-2 mt-2 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200" onClick={() => navigate('/earning-dashboard')}>
                 <FaTrophy className="text-lg" />
                 <span>Earnings Dashboard</span>
               </div>
@@ -323,7 +386,10 @@ export default function CarwashDashboard() {
 							<div className="flex items-center gap-2">
 								<h3 className="text-lg font-semibold">Services</h3>
 								<span className="text-blue-400 cursor-pointer" title="Services info">?</span>
-								<button className="ml-auto px-3 py-1 bg-gray-100 rounded-lg text-sm font-medium hover:bg-gray-200">
+								<button
+									className="ml-auto px-3 py-1 bg-gray-100 rounded-lg text-sm font-medium hover:bg-gray-200"
+									onClick={() => setShowAddSvc(true)}
+								>
 									Add Services +
 								</button>
 							</div>
@@ -331,20 +397,33 @@ export default function CarwashDashboard() {
                 {services.length === 0 ? (
                   <div className="text-gray-500 text-sm">No services configured yet.</div>
                 ) : (
-                  services.map(s => (
-                    <div key={s.serviceId} className="flex items-center justify-between border rounded p-2">
-                      <div>
-                        <div className="font-medium">{s.name}</div>
-                        <div className="text-sm text-gray-600">₱{Number(s.price).toFixed(2)}</div>
+                  services.map(s => {
+                    const img = s.image_url
+                      ? (String(s.image_url).startsWith('http') ? s.image_url : `http://localhost:3000${s.image_url}`)
+                      : "https://via.placeholder.com/64?text=Svc";
+                    return (
+                      <div key={s.serviceId} className="flex items-center justify-between border rounded p-2">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={img}
+                            alt=""
+                            className="w-12 h-12 object-cover rounded"
+                            onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/64?text=Svc"; }}
+                          />
+                          <div>
+                            <div className="font-medium">{s.name}</div>
+                            <div className="text-sm text-gray-600">₱{Number(s.price).toFixed(2)}</div>
+                          </div>
+                        </div>
+                        <button
+                          className="text-blue-600 text-sm"
+                          onClick={() => navigate(`/services/${s.serviceId}/edit`, { state: { service: s } })}
+                        >
+                          Edit
+                        </button>
                       </div>
-                      <button
-                        className="text-blue-600 text-sm"
-                        onClick={() => navigate(`/services/${s.serviceId}/edit`, { state: { service: s } })}
-                      >
-                        Edit
-                      </button>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
 						</div>
@@ -596,6 +675,70 @@ export default function CarwashDashboard() {
     100% { opacity: 1; transform: translateY(0) scale(1);}
   }
 `}</style>
+
+			{/* Add Service Modal */}
+			{showAddSvc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white w-full max-w-md rounded-lg shadow p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-lg font-semibold">Add Service</h4>
+              <button className="text-gray-500" onClick={() => setShowAddSvc(false)}>✕</button>
+            </div>
+            <form className="space-y-4" onSubmit={submitService}>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Name</label>
+                <input
+                  type="text"
+                  className="w-full border rounded px-3 py-2"
+                  value={svcForm.name}
+                  onChange={(e) => setSvcForm((f) => ({ ...f, name: e.target.value }))}
+                  placeholder="e.g., Basic Carwash"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Price (₱)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="w-full border rounded px-3 py-2"
+                  value={svcForm.price}
+                  onChange={(e) => setSvcForm((f) => ({ ...f, price: e.target.value }))}
+                  placeholder="e.g., 200"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Description</label>
+                <textarea
+                  className="w-full border rounded px-3 py-2"
+                  rows={3}
+                  value={svcForm.description}
+                  onChange={(e) => setSvcForm((f) => ({ ...f, description: e.target.value }))}
+                  placeholder="Optional"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Image</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="w-full border rounded px-3 py-2"
+                  onChange={(e) => setSvcFile(e.target.files?.[0] || null)}
+                />
+              </div>
+              <div className="flex items-center justify-end gap-2">
+                <button type="button" className="px-3 py-1 rounded bg-gray-100" onClick={() => setShowAddSvc(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="px-3 py-1 rounded bg-blue-600 text-white">
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 		</div>
 	);
 }

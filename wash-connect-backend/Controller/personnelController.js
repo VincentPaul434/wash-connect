@@ -98,3 +98,52 @@ exports.getPersonnelById = async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch personnel', details: error.message });
     }
 };
+
+// Assign a personnel to a specific service
+exports.assignToService = async (req, res) => {
+  const { personnelId, serviceId } = req.body;
+  if (!personnelId || !serviceId) {
+    return res.status(400).json({ error: 'personnelId and serviceId are required' });
+  }
+  try {
+    // Ensure mapping table (idempotent)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS service_personnel (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        service_id INT NOT NULL,
+        personnel_id INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uniq_service_personnel (service_id, personnel_id)
+      )
+    `);
+
+    await pool.query(
+      `INSERT INTO service_personnel (service_id, personnel_id)
+       VALUES (?, ?)
+       ON DUPLICATE KEY UPDATE personnel_id = VALUES(personnel_id)`,
+      [serviceId, personnelId]
+    );
+    res.json({ message: 'Personnel assigned to service successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to assign personnel to service', details: error.message });
+  }
+};
+
+// List personnel assigned to a service
+exports.getPersonnelByService = async (req, res) => {
+  const { serviceId } = req.params;
+  if (!serviceId) return res.status(400).json({ error: 'serviceId is required' });
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT p.personnelId, p.first_name, p.last_name, p.role, p.type, p.email, p.avatar
+       FROM service_personnel sp
+       JOIN personnel p ON p.personnelId = sp.personnel_id
+       WHERE sp.service_id = ?`,
+      [serviceId]
+    );
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch assigned personnel', details: error.message });
+  }
+};
