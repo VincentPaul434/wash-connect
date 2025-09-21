@@ -2,30 +2,6 @@ import React, { useEffect, useState } from "react";
 import { FaEnvelope, FaPhone, FaUserCircle, FaStar, FaRegStar, FaEye, FaBars, FaRegEnvelope, FaRegUser, FaRegCheckSquare, FaRegFolderOpen, FaTrophy, FaRegEye } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
-const services = [
-	{
-		name: "Full detailing",
-		date: "April 5, 2024",
-		tag: "Detailers",
-		tagColor: "bg-pink-200 text-pink-700",
-		avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-	},
-	{
-		name: "Ceramic Coating",
-		date: "April 5, 2024",
-		tag: "Service Technician",
-		tagColor: "bg-blue-200 text-blue-700",
-		avatar: "https://randomuser.me/api/portraits/men/33.jpg",
-	},
-	{
-		name: "Carwash",
-		date: "April 5, 2024",
-		tag: "Carwash Attendants",
-		tagColor: "bg-red-200 text-red-700",
-		avatar: "https://randomuser.me/api/portraits/men/34.jpg",
-	},
-];
-
 const reviews = [
 	{
 		service: "Full detailing",
@@ -64,6 +40,7 @@ export default function CarwashDashboard() {
     const [activeTab, setActiveTab] = useState("overview");
     const [ownerData, setOwnerData] = useState(null);
     const [carwashData, setCarwashData] = useState(null);
+    const [services, setServices] = useState([]); // NEW
     const [isLoading, setIsLoading] = useState(true);
     const [profileUploaded, setProfileUploaded] = useState(false);
     const [toast, setToast] = useState({ show: false, message: "", type: "success" });
@@ -95,6 +72,11 @@ export default function CarwashDashboard() {
                     const bookingsRes = await fetch(`http://localhost:3000/api/bookings/by-application/${appData.applicationId}`);
                     const bookingsData = await bookingsRes.json();
                     setRecentBookings(bookingsData);
+
+                    // Fetch services
+                    const svcRes = await fetch(`http://localhost:3000/api/services/by-application/${appData.applicationId}`);
+                    const svcData = await svcRes.json();
+                    setServices(Array.isArray(svcData) ? svcData : []);
                 }
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -340,59 +322,31 @@ export default function CarwashDashboard() {
 						<div className="mt-8">
 							<div className="flex items-center gap-2">
 								<h3 className="text-lg font-semibold">Services</h3>
-								<span
-									className="text-blue-400 cursor-pointer"
-									title="Services info"
-								>
-									?
-								</span>
+								<span className="text-blue-400 cursor-pointer" title="Services info">?</span>
 								<button className="ml-auto px-3 py-1 bg-gray-100 rounded-lg text-sm font-medium hover:bg-gray-200">
 									Add Services +
 								</button>
 							</div>
 							<div className="space-y-3 mt-4">
-								{services.map((s, i) => (
-									<div
-										key={i}
-										className="flex items-center bg-white rounded-lg shadow px-4 py-2"
-									>
-										<span className="font-semibold">{s.name}</span>
-										<span className="mx-3 text-gray-400">
-											<svg
-												className="inline w-4 h-4 mr-1"
-												fill="none"
-												stroke="currentColor"
-												viewBox="0 0 24 24"
-											>
-												<path
-													strokeLinecap="round"
-													strokeLinejoin="round"
-													strokeWidth={2}
-													d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-												/>
-											</svg>
-											{s.date}
-										</span>
-										<span
-											className={`px-2 py-0.5 rounded text-xs font-medium ${s.tagColor}`}
-										>
-											{s.tag}
-										</span>
-										<img
-											src={s.avatar}
-											alt=""
-											className="w-8 h-8 rounded-full ml-auto"
-										/>
-										<button className="ml-2 text-gray-400 hover:text-gray-700">
-											<svg width="20" height="20" fill="currentColor">
-												<circle cx="10" cy="5" r="1.5" />
-												<circle cx="10" cy="10" r="1.5" />
-												<circle cx="10" cy="15" r="1.5" />
-											</svg>
-										</button>
-									</div>
-								))}
-							</div>
+                {services.length === 0 ? (
+                  <div className="text-gray-500 text-sm">No services configured yet.</div>
+                ) : (
+                  services.map(s => (
+                    <div key={s.serviceId} className="flex items-center justify-between border rounded p-2">
+                      <div>
+                        <div className="font-medium">{s.name}</div>
+                        <div className="text-sm text-gray-600">₱{Number(s.price).toFixed(2)}</div>
+                      </div>
+                      <button
+                        className="text-blue-600 text-sm"
+                        onClick={() => navigate(`/services/${s.serviceId}/edit`, { state: { service: s } })}
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
 						</div>
 
 						{/* Recent Booking Request */}

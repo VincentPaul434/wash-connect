@@ -20,7 +20,7 @@ const carwashOwnersRoutes = require('./routes/carwashOwners');
 const ownerAvatarUpload = require('./routes/ownerAvatarUpload');
 const feedbackRoutes = require('./routes/feedback');
 const paymentRoutes = require('./routes/payment');
-
+const serviceRoutes = require('./routes/services');
 
 
 const app = express();
@@ -43,6 +43,7 @@ app.use('/api', carwashOwnersRoutes);
 app.use('/api', ownerAvatarUpload);
 app.use('/api', feedbackRoutes);
 app.use('/api', paymentRoutes);
+app.use('/api/services', serviceRoutes);
 
 //admin
 app.use('/api/admin', adminRegisterRoutes);
