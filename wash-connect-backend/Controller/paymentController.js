@@ -131,3 +131,14 @@ exports.getPaymentsByApplication = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch payments', details: error.message });
   }
 };
+
+// GET /api/payments/by-appointment/:appointmentId
+exports.getPaymentByAppointment = async (req, res) => {
+  const { appointmentId } = req.params;
+  try {
+    const [rows] = await pool.query("SELECT * FROM payments WHERE appointment_id = ?", [appointmentId]);
+    res.json({ payment: rows }); // returns all payments for that appointment
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch payments" });
+  }
+};

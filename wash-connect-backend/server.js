@@ -21,6 +21,7 @@ const ownerAvatarUpload = require('./routes/ownerAvatarUpload');
 const feedbackRoutes = require('./routes/feedback');
 const paymentRoutes = require('./routes/payment');
 const serviceRoutes = require('./routes/service');
+const bookingRoutes = require('./routes/booking');
 
 
 const app = express();
@@ -45,6 +46,8 @@ app.use('/api', feedbackRoutes);
 app.use('/api', paymentRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/services', serviceRoutes);
+app.use('/api', bookingRoutes);
+
 
 //admin
 app.use('/api/admin', adminRegisterRoutes);

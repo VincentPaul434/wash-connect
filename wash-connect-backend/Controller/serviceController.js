@@ -77,3 +77,10 @@ exports.uploadServiceImage = async (req, res) => {
     res.status(500).json({ error: 'Failed to save image', details: e.message });
   }
 };
+
+// GET /api/services/by-name/:name
+exports.getServiceByName = async (req, res) => {
+  const { name } = req.params;
+  const [rows] = await pool.query("SELECT price FROM services WHERE name = ?", [name]);
+  res.json(rows[0] || {});
+};

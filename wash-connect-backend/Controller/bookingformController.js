@@ -207,3 +207,15 @@ exports.isBookingPending = async (req, res) => {
         address: rows[0].address
     });
 };
+
+// Get booking by ID
+exports.getBookingById = async (req, res) => {
+  const { appointmentId } = req.params;
+  try {
+    const [rows] = await pool.query("SELECT * FROM bookings WHERE appointment_id = ?", [appointmentId]);
+    if (!rows.length) return res.status(404).json({ error: "Booking not found" });
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch booking" });
+  }
+};

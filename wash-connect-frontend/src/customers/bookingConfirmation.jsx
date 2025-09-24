@@ -5,18 +5,6 @@ import { FaEnvelope, FaUser, FaStar, FaHeart, FaCalendarAlt, FaSignOutAlt } from
 import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 
-function bookingPrice(serviceName) {
-  const services = [
-    { name: "Basic Car Wash", price: 400 },
-    { name: "Full Detailing", price: 1000 },
-    { name: "Underwash", price: 200 },
-    { name: "Ceramic Coating", price: 1000 },
-    { name: "Basic Motowash", price: 50 },
-    { name: "Engine Detailing", price: 2000 },
-  ];
-  return services.find((s) => s.name === serviceName)?.price || 0;
-}
-
 function BookingConfirmation() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -142,10 +130,7 @@ function BookingConfirmation() {
     return Number.isFinite(num) ? num : 0;
   };
 
-  const servicePrice =
-    booking?.price !== null && booking?.price !== undefined
-      ? toNumber(booking.price)
-      : toNumber(bookingPrice(booking.service_name));
+  const servicePrice = toNumber(booking?.price);
 
   const paidAmount =
     location.state?.paid_amount !== undefined
