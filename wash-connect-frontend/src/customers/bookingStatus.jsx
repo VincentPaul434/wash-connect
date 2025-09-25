@@ -70,6 +70,9 @@ function BookingStatus() {
             </div>
             <div className="text-sm text-gray-600 mb-1">
               <span className="font-semibold">Date:</span> {booking.schedule_date || "—"}
+              {booking.schedule_time && (
+                <span> at <span className="font-semibold">{booking.schedule_time}</span></span>
+              )}
             </div>
             <div className="text-sm text-gray-600">
               <span className="font-semibold">Address:</span> {booking.address || "—"}
@@ -99,6 +102,9 @@ function BookingStatus() {
             </div>
             <div className="text-sm text-gray-600 mb-1">
               <span className="font-semibold">Date:</span> {booking.schedule_date || "—"}
+              {booking.schedule_time && (
+                <span> at <span className="font-semibold">{booking.schedule_time}</span></span>
+              )}
             </div>
             <div className="text-sm text-gray-600">
               <span className="font-semibold">Address:</span> {booking.address || "—"}

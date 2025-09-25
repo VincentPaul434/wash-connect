@@ -189,68 +189,84 @@ export default function CarwashDashboard() {
 						</span>
 					</div>
 				</div>
-            {/* Navigation */}
-            <nav className="flex-1 px-4 space-y-2">
-              <div className="flex items-center justify-between mb-2 hover:bg-gray-100 px-2 py-1 rounded cursor-pointer transition-colors duration-200">
-                <span className="flex items-center gap-2 text-gray-700">
-                  <FaRegEnvelope className="text-lg" /> Inbox
-                </span>
-                <span className="text-xs text-gray-700">24</span>
-              </div>
-              
-              <button
-                className={`w-full flex items-center gap-2 px-3 py-2 rounded transition-colors duration-200 ${
-				  activeTab === "overview" 
-					? "bg-blue-100 text-blue-700 font-semibold" 
-					: "hover:bg-gray-100 cursor-pointer"
-				}`}
-				onClick={() => setActiveTab("overview")}
-			  >
-				<FaRegEye /> Overview
-			  </button>
-			  
-			  <button
-				className={`w-full flex items-center gap-2 px-3 py-2 rounded transition-colors duration-200 ${
-				  activeTab === "customers" 
-					? "bg-blue-100 text-blue-700 font-semibold" 
-					: "hover:bg-gray-100 cursor-pointer"
-				}`}
-			onClick={() => {
-				setActiveTab("customers");
-				navigate("/customer-list");
-			}}>
-				<span className="text-lg">★</span> Customers & Employee
-			  </button>
-              
-              <hr className="my-2 border-gray-300" />
-              
-              <button
-                className="flex items-center gap-2 mb-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200 w-full text-left"
-                onClick={() => navigate("/bookings")}
-              >
-                <FaRegCheckSquare className="text-lg" />
-                <span>Manage Bookings</span>
-              </button>
-              
-              <div className="flex items-center gap-2 mb-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200">
-                <FaRegCheckSquare className="text-lg" />
-                <span>Booking History</span>
-              </div>
-              
-              <div className="flex items-center gap-2 mt-2 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200" onClick={() => navigate('/earning-dashboard')}>
-                <FaTrophy className="text-lg" />
-                <span>Earnings Dashboard</span>
-              </div>
-              
-              <hr className="my-4 border-gray-300" />
-            </nav>
-          <div className="mt-auto px-4 py-6">
-            <button className="flex items-center gap-2 text-gray-700 hover:text-red-500 px-2 py-1 rounded hover:bg-gray-100 cursor-pointer transition-colors duration-200"
-				onClick={() => navigate("/carwash-login")}
-			>
-              <FaRegFolderOpen className="text-lg" /> Logout
-            </button>
-          </div>
+				{/* Navigation */}
+				<nav className="flex-1 px-4 space-y-2">
+					<div className="flex items-center justify-between mb-2 hover:bg-gray-100 px-2 py-1 rounded cursor-pointer transition-colors duration-200">
+						<span className="flex items-center gap-2 text-gray-700">
+							<FaRegEnvelope className="text-lg" /> Inbox
+						</span>
+						<span className="text-xs text-gray-700">24</span>
+					</div>
+					
+					<button
+						className={`w-full flex items-center gap-2 px-3 py-2 rounded transition-colors duration-200 ${
+						  activeTab === "overview"
+							? "bg-blue-100 text-blue-700 font-semibold" 
+							: "hover:bg-gray-100 cursor-pointer"
+						}`}
+						onClick={() => setActiveTab("overview")}
+					>
+						<FaRegEye /> Overview
+					</button>
+					
+					<button
+						className={`w-full flex items-center gap-2 px-3 py-2 rounded transition-colors duration-200 ${
+						  activeTab === "customers" 
+							? "bg-blue-100 text-blue-700 font-semibold" 
+							: "hover:bg-gray-100 cursor-pointer"
+						}`}
+				onClick={() => {
+					setActiveTab("customers");
+					navigate("/customer-list");
+				}}>
+					<span className="text-lg">★</span> Customers & Employee
+				  </button>
+				  {/* --- Add Status Update Tab Below --- */}
+				  <button
+					className={`w-full flex items-center gap-2 px-3 py-2 rounded transition-colors duration-200 ${
+					  activeTab === "status-update"
+						? "bg-blue-100 text-blue-700 font-semibold"
+						: "hover:bg-gray-100 cursor-pointer"
+					}`}
+					onClick={() => {
+					  setActiveTab("status-update");
+					  navigate("/status-update");
+					}}
+				  >
+					<FaRegCheckSquare className="text-lg" />
+					<span>Status Update</span>
+				  </button>
+				  {/* --- End Status Update Tab --- */}
+				  
+				  <hr className="my-2 border-gray-300" />
+				  
+				  <button
+					className="flex items-center gap-2 mb-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200 w-full text-left"
+					onClick={() => navigate("/bookings")}
+				  >
+					<FaRegCheckSquare className="text-lg" />
+					<span>Manage Bookings</span>
+				  </button>
+				  
+				  <div className="flex items-center gap-2 mb-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200">
+					<FaRegCheckSquare className="text-lg" />
+					<span>Booking History</span>
+				  </div>
+				  
+				  <div className="flex items-center gap-2 mt-2 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200" onClick={() => navigate('/earning-dashboard')}>
+					<FaTrophy className="text-lg" />
+					<span>Earnings Dashboard</span>
+				  </div>
+				  
+				  <hr className="my-4 border-gray-300" />
+				</nav>
+			  <div className="mt-auto px-4 py-6">
+				<button className="flex items-center gap-2 text-gray-700 hover:text-red-500 px-2 py-1 rounded hover:bg-gray-100 cursor-pointer transition-colors duration-200"
+					onClick={() => navigate("/carwash-login")}
+				>
+				  <FaRegFolderOpen className="text-lg" /> Logout
+				</button>
+			  </div>
 			</aside>
 
 			{/* Main Content */}

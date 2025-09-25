@@ -2,41 +2,44 @@ const pool = require('../db');
 
 // Create a booking
 exports.createBooking = async (req, res) => {
-	const {
-		user_id,
-		applicationId,
-		service_name,
-		schedule_date,
-		address,
-		message,
-		personnelId,
-		price
-	} = req.body;
+    const {
+        user_id,
+        applicationId,
+        service_name,
+        schedule_date,
+        schedule_time,
+        address,
+        message,
+        personnelId,
+        price
+    } = req.body;
 
-	try {
-		const [existing] = await pool.query(
-			"SELECT * FROM bookings WHERE user_id = ? AND status NOT IN ('Declined', 'Done', 'Cancelled')",
-			[user_id]
-		);
-		if (existing.length > 0) {
-			return res.status(400).json({ error: "You already have an active booking." });
-		}
-		if (!user_id || !applicationId || !service_name || !schedule_date || !address || price === undefined) {
-			return res.status(400).json({ error: 'Missing required fields' });
-		}
-		const [result] = await pool.query(
-			`INSERT INTO bookings (user_id, applicationId, service_name, schedule_date, address, message, personnelId, price)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-			[user_id, applicationId, service_name, schedule_date, address, message || null, personnelId || null, price]
-		);
-		res.status(201).json({
-			message: 'Booking submitted successfully',
-			appointment_id: result.insertId,
-			status: 'Pending'
-		});
-	} catch (error) {
-		res.status(500).json({ error: 'Failed to submit booking', details: error.message });
-	}
+    try {
+        const [existing] = await pool.query(
+            "SELECT * FROM bookings WHERE user_id = ? AND status NOT IN ('Declined', 'Done', 'Cancelled')",
+            [user_id]
+        );
+        if (existing.length > 0) {
+            return res.status(400).json({ error: "You already have an active booking." });
+        }
+        if (!user_id || !applicationId || !service_name || !schedule_date || !schedule_time || !address || price === undefined) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        const [result] = await pool.query(
+            `INSERT INTO bookings (user_id, applicationId, service_name, schedule_date, schedule_time, address, message, personnelId, price)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [user_id, applicationId, service_name, schedule_date, schedule_time, address, message || null, personnelId || null, price]
+        );
+        res.status(201).json({
+            message: 'Booking submitted successfully',
+            appointment_id: result.insertId,
+            status: 'Pending'
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to submit booking', details: error.message });
+    }
 };
 
 // Get bookings by application
@@ -192,7 +195,7 @@ exports.cancelBooking = async (req, res) => {
 exports.isBookingPending = async (req, res) => {
     const { appointmentId } = req.params;
     const [rows] = await pool.query(
-        "SELECT status, service_name, schedule_date, address FROM bookings WHERE appointment_id = ?",
+        "SELECT status, service_name, schedule_date, schedule_time, address FROM bookings WHERE appointment_id = ?",
         [appointmentId]
     );
     if (rows.length === 0) {
@@ -204,6 +207,7 @@ exports.isBookingPending = async (req, res) => {
         status: rows[0].status,
         service_name: rows[0].service_name,
         schedule_date: rows[0].schedule_date,
+        schedule_time: rows[0].schedule_time, // <-- add this
         address: rows[0].address
     });
 };

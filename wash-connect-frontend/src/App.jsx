@@ -31,6 +31,7 @@ import EarningDashboard from './carwashowners/EarningDashboard';
 import BookingStatus from './customers/bookingStatus';
 import PersonnelDetails from './carwashowners/PersonnelDetails';
 import StatusUpdate from './carwashowners/statusUpdate';
+import TrackStatus from './customers/trackStatus';
 
 function App() {
     return (
@@ -66,6 +67,7 @@ function App() {
                 <Route path="/personnel-details" element={<PersonnelDetails />} />
                 <Route path="/personnel-details/:personnelId" element={<PersonnelDetails />} />
                 <Route path="/status-update" element={<StatusUpdate />} />
+                <Route path="/track-status" element={<TrackStatus />} />
 
                 {/* Admin Routes */}
                 <Route path="/admin-register" element={<AdminRegister />} />

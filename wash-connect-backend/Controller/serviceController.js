@@ -84,3 +84,21 @@ exports.getServiceByName = async (req, res) => {
   const [rows] = await pool.query("SELECT price FROM services WHERE name = ?", [name]);
   res.json(rows[0] || {});
 };
+
+// New function to get services by personnel
+exports.getServicesByPersonnel = async (req, res) => {
+  const { personnelId } = req.params;
+  try {
+    const [rows] = await pool.query(
+      `SELECT s.serviceId, s.applicationId, s.name, s.price, s.description, s.duration_minutes, s.image_url, s.is_active
+       FROM services s
+       JOIN service_personnel sp ON sp.service_id = s.serviceId
+       WHERE sp.personnel_id = ? AND s.is_active = 1
+       ORDER BY s.name`,
+      [personnelId]
+    );
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to fetch services for personnel', details: e.message });
+  }
+};

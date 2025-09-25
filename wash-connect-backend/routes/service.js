@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const services = require('../Controller/serviceController');
+const serviceController = require('../Controller/serviceController'); // <-- Add this line
 
 // ensure upload dir
 const uploadDir = path.join(__dirname, '..', 'uploads', 'services');
@@ -26,6 +27,7 @@ const upload = multer({
 });
 
 router.get('/by-application/:applicationId', services.getServicesByApplication);
+router.get('/services/by-personnel/:personnelId', serviceController.getServicesByPersonnel);
 router.post('/', services.createService);
 router.patch('/:serviceId', services.updateService);
 router.delete('/:serviceId', services.deleteService);

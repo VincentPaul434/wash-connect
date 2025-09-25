@@ -32,6 +32,7 @@ function BookForm() {
     email: "",
     address: "",
     date: "",
+    time: "",
     message: "",
   });
   const [submitting, setSubmitting] = useState(false);
@@ -40,6 +41,7 @@ function BookForm() {
   const [personnelList, setPersonnelList] = useState([]);
   const [selectedPersonnelId, setSelectedPersonnelId] = useState("");
   const [fetchedServices, setFetchedServices] = useState([]);
+ 
 
   // Prefill from navigation state (user profile info)
   useEffect(() => {
@@ -132,6 +134,7 @@ function BookForm() {
     const schedule_date = form.date;
     const address = form.address;
     const message = form.message;
+    const schedule_time = form.time;
 
     if (!user_id || !applicationId || !service_name || !schedule_date || !address) {
       alert("Missing required fields.");
@@ -152,6 +155,7 @@ function BookForm() {
           message,
           personnelId: selectedPersonnelId,
           price,
+          schedule_time,
         }),
       });
       const data = await res.json();
@@ -175,6 +179,39 @@ function BookForm() {
       }
     }
   }, [appointment_id]);
+
+  const selectedPersonnel = personnelList.find(
+    (p) => String(p.personnelId) === String(selectedPersonnelId)
+  );
+
+  function parseTime(str) {
+    // Converts "8:00 AM" to "08:00", "3:00 PM" to "15:00"
+    if (!str) return "";
+    let [time, period] = str.split(" ");
+    let [hour, minute] = time.split(":");
+    hour = Number(hour);
+    if (period === "PM" && hour < 12) hour += 12;
+    if (period === "AM" && hour === 12) hour = 0;
+    return `${hour.toString().padStart(2, "0")}:${minute}`;
+  }
+
+  let personnelMinTime = "";
+  let personnelMaxTime = "";
+  if (selectedPersonnel?.time_available) {
+    // Example: "8:00 AM - 3:00 PM"
+    const [start, end] = selectedPersonnel.time_available.split(" - ");
+    personnelMinTime = parseTime(start);
+    personnelMaxTime = parseTime(end);
+  }
+
+  function getDayOfWeek(dateStr) {
+    // Returns "Mon", "Tue", etc. for a yyyy-mm-dd string
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const d = new Date(dateStr);
+    return days[d.getDay()];
+  }
+
+  const availableDays = selectedPersonnel?.day_available?.split(",").map(d => d.trim()); // ["Mon", "Wed", "Fri"]
 
   return (
     <div
@@ -302,27 +339,80 @@ function BookForm() {
                     onChange={handleChange}
                     className="pl-9 pr-3 py-2 rounded border border-gray-300 w-full focus:outline-none"
                     required
+                    min={new Date().toISOString().split("T")[0]}
+                    disabled={!availableDays?.length}
+                    onInput={e => {
+                      const chosenDay = getDayOfWeek(e.target.value);
+                      if (availableDays && !availableDays.includes(chosenDay)) {
+                        e.target.setCustomValidity(`Please select an available day: ${availableDays.join(", ")}`);
+                      } else {
+                        e.target.setCustomValidity("");
+                      }
+                    }}
                   />
+                  {!availableDays?.length && (
+                    <div className="text-xs text-red-500 mt-1">
+                      Please select a carwash boy to see available days.
+                    </div>
+                  )}
+                  {selectedPersonnel && selectedPersonnel.day_available && (
+                    <div className="mt-2 text-sm text-blue-700">
+                      <strong>Available Day:</strong> {selectedPersonnel.day_available}
+                    </div>
+                  )}
+                  </div>
+                  </div>
+                  </div>
+
+                  <div className="flex-1">
+                    <label className="block mb-1 text-gray-700">Select Carwash Boy</label>
+                    <select
+                      name="personnelId"
+                      value={selectedPersonnelId}
+                      onChange={(e) => setSelectedPersonnelId(e.target.value)}
+                      className="w-full border rounded px-3 py-2"
+                      required
+                    >
+                      <option value="">Select...</option>
+                      {personnelList.map((p) => (
+                        <option key={p.personnelId} value={p.personnelId}>
+                          {p.first_name} {p.last_name}
+                        </option>
+                      ))}
+                    </select>
+              {selectedPersonnel && selectedPersonnel.time_available && (
+                <div className="mb-2 text-sm text-blue-700">
+                  <strong>Available Time:</strong> {selectedPersonnel.time_available}
                 </div>
-              </div>
+              )}
             </div>
 
             <div className="flex-1">
-              <label className="block mb-1 text-gray-700">Select Carwash Boy</label>
-              <select
-                name="personnelId"
-                value={selectedPersonnelId}
-                onChange={(e) => setSelectedPersonnelId(e.target.value)}
-                className="w-full border rounded px-3 py-2"
+              <label className="block mb-1 text-gray-700">Select Time</label>
+              <input
+                type="time"
+                name="time"
+                value={form.time || ""}
+                onChange={handleChange}
+                className="pl-9 pr-3 py-2 rounded border border-gray-300 w-full focus:outline-none"
                 required
-              >
-                <option value="">Select...</option>
-                {personnelList.map((p) => (
-                  <option key={p.personnelId} value={p.personnelId}>
-                    {p.first_name} {p.last_name}
-                  </option>
-                ))}
-              </select>
+                min={personnelMinTime}
+                max={personnelMaxTime}
+                disabled={!personnelMinTime || !personnelMaxTime}
+                onInput={e => {
+                  const val = e.target.value;
+                  if (personnelMinTime && personnelMaxTime && (val < personnelMinTime || val > personnelMaxTime)) {
+                    e.target.setCustomValidity(`Please select a time between ${personnelMinTime} and ${personnelMaxTime}.`);
+                  } else {
+                    e.target.setCustomValidity("");
+                  }
+                }}
+              />
+              {(!personnelMinTime || !personnelMaxTime) && (
+                <div className="text-xs text-red-500 mt-1">
+                  Please select a carwash boy with available time.
+                </div>
+              )}
             </div>
 
             <div>
