@@ -59,7 +59,8 @@ function CarwashShopPage() {
         .then((res) => (res.ok ? res.json() : []))
         .then((bookings) => {
           const latest = (Array.isArray(bookings) ? bookings : []).find(
-            (b) => b.status === "Pending" || b.status === "Confirmed"
+            (b) =>
+              ["Pending", "Confirmed", "On Going", "halfway", "Completed"].includes(b.status)
           );
           setActiveBooking(latest || null);
         })

@@ -134,6 +134,29 @@ function UserDashboard() {
             <FaHeart className="mr-3 w-5 h-5" />
             Bookings
           </div>
+          {/* --- Add Track Status Tab Below --- */}
+          <div
+            className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
+            onClick={() => {
+              if (activeBooking) {
+                navigate("/track-status", { state: { appointment_id: activeBooking.appointment_id } });
+              } else {
+                toast(
+                  <div>
+                    <span role="img" aria-label="track" style={{ fontSize: "1.5rem", marginRight: "0.5rem" }}>🔎</span>
+                    <span>No active appointment found.</span>
+                  </div>,
+                  {
+                    icon: "🚫",
+                  }
+                );
+              }
+            }}
+          >
+            <span className="text-xl">🔎</span>
+            <span className="text-gray-700">Track Status</span>
+          </div>
+          {/* --- End Track Status Tab --- */}
           <hr className="my-4" />
           <div
             className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"

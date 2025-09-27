@@ -103,13 +103,13 @@ function BookingConfirmation() {
     );
   }
 
-  if (!booking || booking.status !== "Confirmed") {
+  if (!booking || !["Confirmed", "On Going", "halfway", "Completed"].includes(booking.status)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#c8f1ff]">
         <div className="bg-white rounded-xl shadow p-8 flex flex-col items-center">
-          <h2 className="text-2xl font-semibold mb-2 text-black">Booking Not Confirmed</h2>
+          <h2 className="text-2xl font-semibold mb-2 text-black">Booking Not Active</h2>
           <p className="mb-6 text-gray-700 text-center">
-            Your booking is not yet confirmed. Please wait for confirmation or check your booking status.
+            Your booking is not active. Please wait for confirmation or check your booking status.
           </p>
           <button
             className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 font-semibold"
@@ -247,7 +247,15 @@ function BookingConfirmation() {
                   <div className="text-lg font-semibold text-green-700">Appointment Booked!</div>
                   <div className="text-gray-600 text-sm">You'll receive a confirmation mail shortly!</div>
                 </div>
-                <span className="ml-auto bg-yellow-100 text-yellow-700 px-4 py-1 rounded-full font-semibold text-sm flex items-center">
+                <span className={`ml-auto px-4 py-1 rounded-full font-semibold text-sm flex items-center ${
+                  booking.status === "Completed"
+                    ? "bg-green-100 text-green-700"
+                    : booking.status === "halfway"
+                    ? "bg-yellow-100 text-yellow-700"
+                    : booking.status === "On Going"
+                    ? "bg-blue-100 text-blue-700"
+                    : "bg-gray-100 text-gray-700"
+                }`}>
                   ● {booking.status}
                 </span>
               </div>
@@ -445,6 +453,28 @@ function BookingConfirmation() {
             </div>
           </div>
         </div>
+        {["On Going", "halfway", "Completed"].includes(booking.status) && (
+          <div className="w-full mt-2">
+            <div className="h-2 rounded bg-gray-200 overflow-hidden">
+              <div
+                className={`h-2 rounded transition-all duration-500 ${
+                  booking.status === "On Going"
+                    ? "bg-blue-400 w-1/3"
+                    : booking.status === "halfway"
+                    ? "bg-yellow-400 w-2/3"
+                    : booking.status === "Completed"
+                    ? "bg-green-400 w-full"
+                    : ""
+                }`}
+              />
+            </div>
+            <div className="flex justify-between text-xs mt-1 text-gray-500">
+              <span>On Going</span>
+              <span>Halfway</span>
+              <span>Completed</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
