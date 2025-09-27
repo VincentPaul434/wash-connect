@@ -28,3 +28,41 @@ exports.updateBookingStatus = async (req, res) => {
     res.status(500).json({ error: "Failed to update status" });
   }
 };
+
+
+// Get latest status reason
+exports.getLatestStatusReason = async (req, res) => {
+  const { appointmentId } = req.params;
+  try {
+    const [rows] = await pool.query(
+      `SELECT reason FROM booking_status_history
+       WHERE appointment_id = ?
+       ORDER BY changed_at DESC
+       LIMIT 1`,
+      [appointmentId]
+    );
+    if (rows.length === 0 || !rows[0].reason) {
+      return res.json({ reason: "" });
+    }
+    res.json({ reason: rows[0].reason });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch reason", details: error.message });
+  }
+};
+
+exports.getPersonnelAvailability = async (req, res) => {
+  const { personnelId } = req.params;
+  try {
+    // Example: Get available slots from personnel_availability table
+    const [rows] = await pool.query(
+      `SELECT available_date, available_time FROM personnel_availability WHERE personnel_id = ? AND is_available = 1`,
+      [personnelId]
+    );
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch availability", details: error.message });
+  }
+};
+
+
+

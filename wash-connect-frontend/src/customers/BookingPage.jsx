@@ -65,7 +65,7 @@ function BookingPage() {
 			.then((res) => res.ok ? res.json() : Promise.reject())
 			.then((bookings) => {
 				const active = Array.isArray(bookings)
-					? bookings.find((b) => !["Declined", "Done", "Cancelled", "Completed"].includes(b.status))
+					? bookings.find((b) => !["Declined", "Cancelled", "Completed"].includes(b.status))
 					: null;
 				setHasActiveBooking(!!active);
 				setActiveBooking(active || null);
@@ -167,6 +167,48 @@ function BookingPage() {
 		});
 	};
 
+	const handleTrackStatus = async () => {
+		if (!activeBooking) {
+			toast(
+				<div>
+					<span role="img" aria-label="track" style={{ fontSize: "1.5rem", marginRight: "0.5rem" }}>🔎</span>
+					<span>No active appointment found.</span>
+				</div>,
+				{
+					icon: "🚫",
+				}
+			);
+			return;
+		}
+		try {
+			const res = await fetch(`http://localhost:3000/api/bookings/${activeBooking.appointment_id}`);
+			if (res.ok) {
+				const booking = await res.json();
+				navigate("/track-status", { state: { appointment_id: booking.appointment_id, status: booking.status } });
+			} else {
+				toast(
+					<div>
+						<span role="img" aria-label="track" style={{ fontSize: "1.5rem", marginRight: "0.5rem" }}>🔎</span>
+						<span>Failed to fetch booking status.</span>
+					</div>,
+					{
+						icon: "🚫",
+					}
+				);
+			}
+		} catch {
+			toast(
+				<div>
+					<span role="img" aria-label="track" style={{ fontSize: "1.5rem", marginRight: "0.5rem" }}>🔎</span>
+					<span>Failed to fetch booking status.</span>
+				</div>,
+				{
+					icon: "🚫",
+				}
+			);
+		}
+	};
+
 	return (
 		<div className="flex min-h-screen bg-gradient-to-br from-[#c8f1ff] to-[#e6f7ff]">
 			<Toaster position="top-center" />
@@ -207,6 +249,14 @@ function BookingPage() {
 						Bookings
 					</div>
 					<hr className="my-4" />
+					{/* Track Status Tab */}
+					<div
+						className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
+						onClick={handleTrackStatus}
+					>
+						<span className="text-xl">🔎</span>
+						<span className="text-gray-700">Track Status</span>
+					</div>
 					<div
 						className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
 						onClick={() => {

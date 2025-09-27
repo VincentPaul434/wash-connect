@@ -13,4 +13,9 @@ router.patch('/bookings/status', bookingController.updateBookingStatus);
 // Add this route for GET booking by ID
 router.get('/bookings/:appointmentId', bookingformController.getBookingById);
 
+// Get latest status reason for an appointment
+router.get('/bookings/reason/:appointmentId', bookingController.getLatestStatusReason);
+
+
+
 module.exports = router;
