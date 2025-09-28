@@ -103,7 +103,18 @@ export default function TrackStatus() {
           {/* Appointment Tab */}
           <div
             className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
-            onClick={() => navigate("/booking-confirmation")}
+            onClick={() => {
+              // Find the first active booking (not Declined, Cancelled, Completed)
+              const activeBooking = bookings.find(
+                (b) => !["Declined", "Cancelled", "Completed"].includes(b.status)
+              );
+              if (activeBooking) {
+                navigate("/booking-confirmation", { state: { appointment_id: activeBooking.appointment_id } });
+              } else {
+                // Optionally show a toast or alert
+                // toast("No active appointment found. Please book a service first!", { icon: "📅" });
+              }
+            }}
           >
             <FaCalendarAlt className="mr-3 w-5 h-5" />
             Appointment

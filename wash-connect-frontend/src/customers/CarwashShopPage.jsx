@@ -154,18 +154,18 @@ function CarwashShopPage() {
             <FaHeart className="mr-3 w-5 h-5" />
             Bookings
           </div>
-          <hr className="my-4" />
+          {/* Removed <hr className="my-4" /> */}
           {/* Track Status Tab */}
           <div
-            className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
+            className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-cyan-700 cursor-pointer"
             onClick={() => navigate("/track-status")}
           >
             <span className="text-xl">🔎</span>
-            <span className="text-gray-700">Track Status</span>
+            <span className="text-gray-700 ml-2">Track Status</span>
           </div>
           {/* Appointment Tab */}
           <div
-            className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
+            className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-cyan-700 cursor-pointer"
             onClick={() => {
               if (activeBooking) {
                 navigate("/booking-confirmation", { state: { appointment_id: activeBooking.appointment_id } });
@@ -183,7 +183,7 @@ function CarwashShopPage() {
             }}
           >
             <FaCalendarAlt className="mr-3 w-5 h-5" />
-            Appointment
+            <span className="text-gray-700">Appointment</span>
           </div>
           <div className="mt-auto px-4 pt-8">
             <div

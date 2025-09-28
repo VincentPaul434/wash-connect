@@ -217,7 +217,16 @@ function BookingConfirmation() {
             <FaHeart className="mr-3 w-5 h-5" />
             Bookings
           </div>
-          <hr className="my-4" />
+          {/* Removed <hr className="my-4" /> */}
+          {/* Track Status tab above Appointment, NOT bold or highlighted */}
+          <div
+            className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-cyan-100 text-cyan-700 cursor-pointer"
+            onClick={() => navigate("/track-status")}
+          >
+            <span className="text-xl">🔎</span>
+            <span className="text-gray-700 ml-2">Track Status</span>
+          </div>
+          {/* Appointment tab highlighted and bold */}
           <div
             className="flex items-center w-full px-4 py-3 rounded-lg bg-cyan-100 text-cyan-700 font-semibold cursor-pointer"
             onClick={() => navigate("/booking-confirmation", { state: { appointment_id } })}
@@ -333,7 +342,16 @@ function BookingConfirmation() {
                 {booking.personnelId ? (
                   <div className="flex items-center gap-3">
                     <img
-                      src={booking.personnel_avatar || "https://randomuser.me/api/portraits/men/32.jpg"}
+                      src={
+                        booking.personnel_avatar
+                          ? booking.personnel_avatar.startsWith("/uploads")
+                            ? `http://localhost:3000${booking.personnel_avatar}`
+                            : booking.personnel_avatar
+                          : "https://ui-avatars.com/api/?name=" +
+                            encodeURIComponent(
+                              `${booking.personnel_first_name || ""} ${booking.personnel_last_name || ""}`.trim()
+                            )
+                      }
                       alt="Carwash Boy"
                       className="w-10 h-10 rounded-full object-cover"
                     />
@@ -354,7 +372,7 @@ function BookingConfirmation() {
                   <div className="text-gray-400">No personnel assigned yet.</div>
                 )}
                 <div className="mt-2 text-gray-600">
-                  Carwashboy will arrive between <b>{booking.schedule_date}</b>
+                  Carwashboy will arrive in <b>10 - 30 minutes</b>
                 </div>
                 <div className="flex gap-2 mt-3">
                   <button

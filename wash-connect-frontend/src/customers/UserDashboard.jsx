@@ -127,21 +127,18 @@ function UserDashboard() {
             <FaHeart className="mr-3 w-5 h-5" />
             Bookings
           </div>
-          {/* --- Move horizontal line above Track Status --- */}
-          <hr className="my-4" />
-          {/* --- Track Status Tab --- */}
+          {/* Track Status Tab */}
           <div
-            className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
+            className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-cyan-700 cursor-pointer"
             onClick={() => navigate("/track-status")}
           >
             <span className="text-xl">🔎</span>
             <span className="text-gray-700">Track Status</span>
           </div>
-          {/* --- End Track Status Tab --- */}
+          {/* Appointment Tab */}
           <div
-            className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
+            className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-cyan-700 cursor-pointer"
             onClick={() => {
-              // Find the latest active booking (not Declined, Cancelled, Completed)
               const activeBooking = bookings.find(
                 (b) => !["Declined", "Cancelled", "Completed"].includes(b.status)
               );
