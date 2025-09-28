@@ -216,7 +216,16 @@ function Bookings() {
                   </div>
                   <div className="flex items-center text-sm text-gray-600 mb-1">
                     <span className="font-semibold">Date:</span>
-                    <span className="ml-1">{new Date(booking.schedule_date).toLocaleString()}</span>
+                    <span className="ml-1">
+                      {booking.schedule_date
+                        ? new Date(booking.schedule_date).toLocaleDateString()
+                        : "N/A"}
+                      {booking.schedule_time && (
+                        <span className="ml-2">
+                          | Time: {booking.schedule_time}
+                        </span>
+                      )}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 mt-2">
                     {booking.status === "On Going" && (
@@ -278,7 +287,16 @@ function Bookings() {
                   {getBookingsForCustomer(selectedCustomer).map(b => (
                     <li key={b.appointment_id} className="border-b pb-2">
                       <div className="font-medium">{b.service_name}</div>
-                      <div className="text-xs text-gray-500">{new Date(b.schedule_date).toLocaleString()}</div>
+                      <div className="text-xs text-gray-500">
+                        {b.schedule_date
+                          ? new Date(b.schedule_date).toLocaleDateString()
+                          : "N/A"}
+                        {b.schedule_time && (
+                          <span className="ml-2">
+                            | Time: {b.schedule_time}
+                          </span>
+                        )}
+                      </div>
                       <div className="text-xs">{b.status}</div>
                     </li>
                   ))}

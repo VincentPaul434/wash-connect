@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 const DAYS = [
@@ -11,13 +11,11 @@ const DAYS = [
   { key: "Sun", label: "Sun" },
 ];
 
-// Validates strings like "8:00 AM", "1:05 pm", "12:30PM"
 const TIME_REGEX = /^([1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)$/i;
 
 function normalizeTime(input) {
   if (!input) return "";
   let t = input.trim().toUpperCase();
-  // Add space before AM/PM if missing (e.g., "8:00AM" -> "8:00 AM")
   t = t.replace(/(AM|PM)$/i, " $1").replace(/\s+/g, " ").trim();
   return t;
 }
@@ -30,22 +28,57 @@ function AddEmployee() {
     type: "Full-Time",
     address: "",
     email: "",
-    avatar: "",
-    days_available: [],         // array of day abbreviations 
-    start_time: "",             // "x:xx AM/PM"
-    end_time: "",               // "x:xx AM/PM"
+    avatar: "", // will hold file object
+    days_available: [],
+    start_time: "",
+    end_time: "",
   });
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [services, setServices] = useState([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const owner = JSON.parse(localStorage.getItem("carwashOwner"));
+    const applicationId = owner?.applicationId;
+    console.log("applicationId:", applicationId); // Debug
+    if (!applicationId) return;
+
+    fetch(`http://localhost:3000/api/services/by-application/${applicationId}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        console.log("Fetched services:", data); // Debug
+        setServices(data);
+      })
+      .catch((err) => {
+        console.log("Fetch error:", err);
+        setServices([]);
+      });
+  }, []);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setForm((prev) => ({ ...prev, avatar: file }));
+      setAvatarPreview(URL.createObjectURL(file));
+    }
   };
 
   const toggleDay = (day) => {
     setForm((prev) => {
       const set = new Set(prev.days_available);
       set.has(day) ? set.delete(day) : set.add(day);
-      return { ...prev, days_available: Array.from(set).sort((a, b) => DAYS.findIndex(d => d.key === a) - DAYS.findIndex(d => d.key === b)) };
+      return {
+        ...prev,
+        days_available: Array.from(set).sort(
+          (a, b) =>
+            DAYS.findIndex((d) => d.key === a) -
+            DAYS.findIndex((d) => d.key === b)
+        ),
+      };
     });
   };
 
@@ -58,7 +91,9 @@ function AddEmployee() {
     const end = normalizeTime(form.end_time);
 
     if (!TIME_REGEX.test(start) || !TIME_REGEX.test(end)) {
-      alert("Please enter time in the format h:mm AM/PM (e.g., 8:00 AM, 3:30 PM).");
+      alert(
+        "Please enter time in the format h:mm AM/PM (e.g., 8:00 AM, 3:30 PM)."
+      );
       return;
     }
     if (form.days_available.length === 0) {
@@ -66,28 +101,27 @@ function AddEmployee() {
       return;
     }
 
-    const day_available = form.days_available.join(", ");          // e.g., "Mon, Wed, Fri"
-    const time_available = `${start} - ${end}`;                     // e.g., "8:00 AM - 3:00 PM"
-    const time_availability = `${day_available} ${time_available}`; // legacy combined string
+    const day_available = form.days_available.join(", ");
+    const time_available = `${start} - ${end}`;
+    const time_availability = `${day_available} ${time_available}`;
+
+    // Use FormData for file upload
+    const formData = new FormData();
+    formData.append("owner_id", owner.id);
+    formData.append("first_name", form.first_name);
+    formData.append("last_name", form.last_name);
+    formData.append("role", form.role);
+    formData.append("type", form.type);
+    formData.append("address", form.address);
+    formData.append("email", form.email);
+    if (form.avatar) formData.append("avatar", form.avatar);
+    formData.append("day_available", day_available);
+    formData.append("time_available", time_available);
+    formData.append("time_availability", time_availability);
 
     await fetch(`http://localhost:3000/api/personnel`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        owner_id: owner.id,
-        first_name: form.first_name,
-        last_name: form.last_name,
-        role: form.role,
-        type: form.type,
-        address: form.address,
-        email: form.email,
-        avatar: form.avatar,
-        // New explicit fields
-        day_available,
-        time_available,
-        // Backward compatibility if backend still expects this
-        time_availability,
-      }),
+      body: formData,
     });
     navigate("/personnel-list");
   };
@@ -97,6 +131,24 @@ function AddEmployee() {
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
         <h2 className="text-2xl font-semibold mb-6">Add Employee</h2>
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+          {/* Avatar Upload */}
+          <div className="flex flex-col items-center gap-2">
+            <img
+              src={avatarPreview || "/default-avatar.png"}
+              alt="Avatar Preview"
+              className="w-20 h-20 rounded-full object-cover border"
+            />
+            <label className="block text-sm font-medium mt-2 cursor-pointer">
+              <span className="text-blue-600 underline">Upload Photo</span>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
+            </label>
+          </div>
+
           <div className="flex gap-2">
             <input
               className="border rounded px-2 py-1 flex-1"
@@ -124,8 +176,13 @@ function AddEmployee() {
             required
           >
             <option value="">Select Role</option>
-            <option value="Carwash Attendant">Carwash Attendant</option>
-            <option value="Detailing Specialist">Detailing Specialist</option>
+            {services
+              .filter((s) => !!s.name) // Only show services with a valid name, no exceptions
+              .map((s) => (
+                <option key={s.serviceId} value={s.name}>
+                  {s.name}
+                </option>
+              ))}
           </select>
 
           <select
@@ -156,13 +213,6 @@ function AddEmployee() {
             onChange={handleChange}
             required
           />
-          <input
-            className="border rounded px-2 py-1"
-            name="avatar"
-            placeholder="Avatar URL (optional)"
-            value={form.avatar}
-            onChange={handleChange}
-          />
 
           {/* Days Available */}
           <div>
@@ -191,7 +241,9 @@ function AddEmployee() {
                 placeholder="e.g., 8:00 AM"
                 value={form.start_time}
                 onChange={handleChange}
-                onBlur={(e) => setForm((p) => ({ ...p, start_time: normalizeTime(e.target.value) }))}
+                onBlur={(e) =>
+                  setForm((p) => ({ ...p, start_time: normalizeTime(e.target.value) }))
+                }
                 required
               />
             </div>
@@ -203,7 +255,9 @@ function AddEmployee() {
                 placeholder="e.g., 3:00 PM"
                 value={form.end_time}
                 onChange={handleChange}
-                onBlur={(e) => setForm((p) => ({ ...p, end_time: normalizeTime(e.target.value) }))}
+                onBlur={(e) =>
+                  setForm((p) => ({ ...p, end_time: normalizeTime(e.target.value) }))
+                }
                 required
               />
             </div>
@@ -214,7 +268,9 @@ function AddEmployee() {
             Preview:{" "}
             <span className="font-semibold">
               {form.days_available.join(", ") || "—"}{" "}
-              {form.start_time && form.end_time ? `— ${normalizeTime(form.start_time)} - ${normalizeTime(form.end_time)}` : ""}
+              {form.start_time && form.end_time
+                ? `— ${normalizeTime(form.start_time)} - ${normalizeTime(form.end_time)}`
+                : ""}
             </span>
           </div>
 

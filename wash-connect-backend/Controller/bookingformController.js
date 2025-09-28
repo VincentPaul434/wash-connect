@@ -1,4 +1,24 @@
 const pool = require('../db');
+const nodemailer = require("nodemailer");
+
+// Setup transporter (use .env for credentials)
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+    },
+});
+
+// Helper to send email
+async function sendMail(to, subject, text) {
+    return transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to,
+        subject,
+        text
+    });
+}
 
 // Create a booking
 exports.createBooking = async (req, res) => {
@@ -60,10 +80,6 @@ exports.getBookingsByApplication = async (req, res) => {
 };
 
 // Get bookings by customer
-// ...existing code...
-// Get bookings by customer
-// ...existing code...
-// ...existing code...
 exports.getBookingsByCustomer = async (req, res) => {
     const { userId } = req.params;
     try {
@@ -85,25 +101,39 @@ exports.getBookingsByCustomer = async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch bookings', details: error.message });
     }
 };
-// ...existing code...
-// ...existing code...
-// ...existing code...
 
 // Confirm a booking
 exports.confirmBooking = async (req, res) => {
-  const { appointmentId } = req.params; // <-- use appointmentId
-  try {
-    const [result] = await pool.query(
-      "UPDATE bookings SET status = 'Confirmed' WHERE appointment_id = ?",
-      [appointmentId]
-    );
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "Booking not found" });
+    const { appointmentId } = req.params;
+    try {
+        const [result] = await pool.query(
+            "UPDATE bookings SET status = 'Confirmed' WHERE appointment_id = ?",
+            [appointmentId]
+        );
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Booking not found" });
+        }
+        // Get user email for notification
+        const [rows] = await pool.query(
+            `SELECT b.*, u.email AS customer_email, u.first_name AS customer_first_name
+             FROM bookings b
+             LEFT JOIN users u ON b.user_id = u.user_id
+             WHERE b.appointment_id = ?`,
+            [appointmentId]
+        );
+        const booking = rows[0];
+        if (booking && booking.customer_email) {
+            await sendMail(
+                booking.customer_email,
+                "Booking Confirmed",
+                `Hello ${booking.customer_first_name},\n\nYour booking for "${booking.service_name}" on ${booking.schedule_date} at ${booking.schedule_time} has been confirmed.\n\nThank you for using Wash Connect!`
+            );
+        }
+        res.json({ success: true });
+    } catch (err) {
+        console.error("Nodemailer error:", err);
+        res.status(500).json({ error: "Failed to confirm booking" });
     }
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to confirm booking" });
-  }
 };
 
 // Get confirmed bookings by application
@@ -177,8 +207,25 @@ exports.declineBooking = async (req, res) => {
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'Booking not found' });
         }
+        // Get user email for notification
+        const [rows] = await pool.query(
+            `SELECT b.*, u.email AS customer_email, u.first_name AS customer_first_name
+             FROM bookings b
+             LEFT JOIN users u ON b.user_id = u.user_id
+             WHERE b.appointment_id = ?`,
+            [appointmentId]
+        );
+        const booking = rows[0];
+        if (booking && booking.customer_email) {
+            await sendMail(
+                booking.customer_email,
+                "Booking Declined",
+                `Hello ${booking.customer_first_name},\n\nWe regret to inform you that your booking for "${booking.service_name}" on ${booking.schedule_date} at ${booking.schedule_time} has been declined.\n\nThank you for using Wash Connect!`
+            );
+        }
         res.json({ success: true, status: 'Declined' });
     } catch (error) {
+        console.error("Nodemailer error:", error);
         res.status(500).json({ error: 'Failed to decline booking', details: error.message });
     }
 };

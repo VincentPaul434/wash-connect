@@ -1,4 +1,4 @@
-import { useState } from "react";
+  import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
 
@@ -35,11 +35,22 @@ function CarwashLogin() {
       }
       // Save token and owner info
       localStorage.setItem("token", data.token); 
-      localStorage.setItem("carwashOwner", JSON.stringify(data.owner));
+      const ownerId = data.owner.id;
+
+      // Fetch carwash application for this owner
+      const appRes = await fetch(`http://localhost:3000/api/carwash-applications/by-owner/${ownerId}`);
+      const appData = await appRes.json();
+      const applicationId = appData.applicationId; // adjust based on your backend response
+
+      // Save both owner id and applicationId in localStorage
+      localStorage.setItem("carwashOwner", JSON.stringify({
+        id: ownerId,
+        applicationId: applicationId
+      }));
       setLoading(false);
 
       // Check registration status
-      const statusRes = await fetch(`http://localhost:3000/api/carwash-applications/status/${data.owner.id}`);
+      const statusRes = await fetch(`http://localhost:3000/api/carwash-applications/status/${ownerId}`);
       const statusData = await statusRes.json();
       const status = (statusData.status || "").toLowerCase();
       if (status === "approved") {

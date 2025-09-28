@@ -1,4 +1,17 @@
 const pool = require('../db');
+const multer = require("multer");
+const path = require("path");
+
+// Configure multer for avatar uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/personnel/");
+  },
+  filename: (req, file, cb) => {
+    cb(null, `personnel_${req.params.personnelId}_${Date.now()}${path.extname(file.originalname)}`);
+  },
+});
+const upload = multer({ storage });
 
 exports.getPersonnelByOwner = async (req, res) => {
     const { ownerId } = req.params;
@@ -33,52 +46,43 @@ exports.assignPersonnel = async (req, res) => {
 };
 
 exports.createPersonnel = async (req, res) => {
-    const {
-        owner_id,
-        first_name,
-        last_name,
-        role,
-        type,
-        address,
-        email,
-        avatar,
-        day_available,      // e.g., "Mon, Wed, Fri"
-        time_available,     // e.g., "8:00 AM - 3:00 PM"
-        time_availability,  // optional combined string
-    } = req.body;
+  // For multipart/form-data, fields are in req.body
+  const { owner_id, first_name, last_name, role, type, address, email, day_available, time_available, time_availability } = req.body;
+  // Avatar file is in req.file
+  const avatar = req.file ? `/uploads/personnel/${req.file.filename}` : null;
 
-    // Required fields (kept consistent with legacy behavior)
-    if (!owner_id || !first_name || !last_name) {
-        return res.status(400).json({ error: 'Missing required fields' });
-    }
+  // Required fields (kept consistent with legacy behavior)
+  if (!owner_id || !first_name || !last_name) {
+      return res.status(400).json({ error: 'Missing required fields' });
+  }
 
-    try {
-        const sql = `
-            INSERT INTO personnel
-                (owner_id, first_name, last_name, role, type, address, email, avatar, day_available, time_available, time_availability)
-            VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-        const combined = (time_availability || `${day_available || ''} ${time_available || ''}`.trim()) || null;
+  try {
+      const sql = `
+          INSERT INTO personnel
+              (owner_id, first_name, last_name, role, type, address, email, avatar, day_available, time_available, time_availability)
+          VALUES
+              (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+      const combined = (time_availability || `${day_available || ''} ${time_available || ''}`.trim()) || null;
 
-        await pool.query(sql, [
-            owner_id,
-            first_name,
-            last_name,
-            role,
-            type,
-            address,
-            email,
-            avatar || null,
-            day_available || null,
-            time_available || null,
-            combined,
-        ]);
+      await pool.query(sql, [
+          owner_id,
+          first_name,
+          last_name,
+          role,
+          type,
+          address,
+          email,
+          avatar || null,
+          day_available || null,
+          time_available || null,
+          combined,
+      ]);
 
-        res.status(201).json({ message: 'Personnel created successfully' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to create personnel', details: error.message });
-    }
+      res.status(201).json({ message: 'Personnel created successfully' });
+  } catch (error) {
+      res.status(500).json({ error: 'Failed to create personnel', details: error.message });
+  }
 };
 
 // Get a single personnel by id (for details page)
@@ -147,3 +151,21 @@ exports.getPersonnelByService = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch assigned personnel', details: error.message });
   }
 };
+
+exports.uploadAvatar = [
+  upload.single("avatar"),
+  async (req, res) => {
+    const { personnelId } = req.params;
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+    const avatarUrl = `/uploads/personnel/${req.file.filename}`;
+    try {
+      await pool.query(
+        "UPDATE personnel SET avatar = ? WHERE personnelId = ?",
+        [avatarUrl, personnelId]
+      );
+      res.json({ avatar: avatarUrl });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update avatar", details: error.message });
+    }
+  },
+];

@@ -15,6 +15,7 @@ export default function CarwashDashboard() {
     const [svcForm, setSvcForm] = useState({ name: "", price: "", description: "" });
     const [svcFile, setSvcFile] = useState(null);
     const [reviews, setReviews] = useState([]); // <-- Use state for reviews
+    const [editSvc, setEditSvc] = useState(null); // Add this state for editing
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -406,7 +407,7 @@ export default function CarwashDashboard() {
                         </div>
                         <button
                           className="text-blue-600 text-sm"
-                          onClick={() => navigate(`/services/${s.serviceId}/edit`, { state: { service: s } })}
+                          onClick={() => setEditSvc(s)} // Open edit modal with selected service
                         >
                           Edit
                         </button>
@@ -456,8 +457,30 @@ export default function CarwashDashboard() {
 															</span>
 														</div>
 														<div className="flex items-center gap-2 text-xs text-gray-500">
-															<span>{new Date(booking.schedule_date).toLocaleDateString()}</span>
-															<span>{new Date(booking.schedule_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+															{/* Show booking creation time if available, otherwise show schedule_date */}
+															<span>
+																{booking.created_at
+																? new Date(booking.created_at).toLocaleDateString() +
+																	" " +
+																	new Date(booking.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+																: new Date(booking.schedule_date).toLocaleDateString() +
+																	" " +
+																	new Date(booking.schedule_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+															</span>
+														</div>
+														<div className="flex items-center gap-2 text-xs text-gray-500">
+															{/* Scheduled service time */}
+															<span>
+																Scheduled: {booking.schedule_date
+																	? new Date(booking.schedule_date).toLocaleDateString()
+																	: "N/A"}
+																{/* Show schedule_time if available */}
+																{booking.schedule_time && (
+																	<span className="ml-2">
+																		| Time: {booking.schedule_time}
+																	</span>
+																)}
+															</span>
 														</div>
 														<div className="flex items-center gap-2 text-sm mt-1">
 															<span className="font-semibold">Address:</span>
@@ -724,6 +747,123 @@ export default function CarwashDashboard() {
               </div>
               <div className="flex items-center justify-end gap-2">
                 <button type="button" className="px-3 py-1 rounded bg-gray-100" onClick={() => setShowAddSvc(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="px-3 py-1 rounded bg-blue-600 text-white">
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Service Modal */}
+      {editSvc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white w-full max-w-md rounded-lg shadow p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-lg font-semibold">Edit Service</h4>
+              <button className="text-gray-500" onClick={() => setEditSvc(null)}>✕</button>
+            </div>
+            <form
+              className="space-y-4"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const name = editSvc.name.trim();
+                const price = Number(String(editSvc.price).replace(/[, ]/g, "")) || 0;
+                if (!name) {
+                  showToast("Service name is required", "error");
+                  return;
+                }
+                try {
+                  // Update service details
+                  const res = await fetch(`http://localhost:3000/api/services/${editSvc.serviceId}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      name,
+                      price,
+                      description: editSvc.description || null,
+                    }),
+                  });
+                  if (!res.ok) {
+                    const msg = await res.text();
+                    showToast(`Failed to update service: ${msg || "server error"}`, "error");
+                    return;
+                  }
+                  // Optionally update image
+                  if (editSvc.newImageFile) {
+                    const fd = new FormData();
+                    fd.append("image", editSvc.newImageFile);
+                    await fetch(`http://localhost:3000/api/services/${editSvc.serviceId}/image`, {
+                      method: "POST",
+                      body: fd,
+                    });
+                  }
+                  // Update local state
+                  setServices((prev) =>
+                    prev.map((svc) =>
+                      svc.serviceId === editSvc.serviceId
+                        ? { ...svc, name, price, description: editSvc.description, image_url: editSvc.image_url }
+                        : svc
+                    )
+                  );
+                  setEditSvc(null);
+                  showToast("Service updated", "success");
+                } catch {
+                  showToast("Network error", "error");
+                }
+              }}
+            >
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Name</label>
+                <input
+                  type="text"
+                  className="w-full border rounded px-3 py-2"
+                  value={editSvc.name}
+                  onChange={(e) => setEditSvc((svc) => ({ ...svc, name: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Price (₱)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="w-full border rounded px-3 py-2"
+                  value={editSvc.price}
+                  onChange={(e) => setEditSvc((svc) => ({ ...svc, price: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Description</label>
+                <textarea
+                  className="w-full border rounded px-3 py-2"
+                  rows={3}
+                  value={editSvc.description || ""}
+                  onChange={(e) => setEditSvc((svc) => ({ ...svc, description: e.target.value }))}
+                  placeholder="Optional"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Image</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="w-full border rounded px-3 py-2"
+                  onChange={(e) =>
+                    setEditSvc((svc) => ({
+                      ...svc,
+                      newImageFile: e.target.files?.[0] || null,
+                    }))
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-end gap-2">
+                <button type="button" className="px-3 py-1 rounded bg-gray-100" onClick={() => setEditSvc(null)}>
                   Cancel
                 </button>
                 <button type="submit" className="px-3 py-1 rounded bg-blue-600 text-white">

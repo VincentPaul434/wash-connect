@@ -235,8 +235,13 @@ function PersonnelList() {
                   <div className="flex items-center gap-3">
                     <img
                       src={
-                        p.avatar ||
-                        `https://ui-avatars.com/api/?name=${encodeURIComponent(`${p.first_name || ""} ${p.last_name || ""}`.trim())}`
+                        p.avatar
+                          ? p.avatar.startsWith("/uploads")
+                            ? `http://localhost:3000${p.avatar}` // Show uploaded photo from backend
+                            : p.avatar // If avatar is a full URL
+                          : `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                              `${p.first_name || ""} ${p.last_name || ""}`.trim()
+                            )}`
                       }
                       alt=""
                       className="w-10 h-10 rounded-full object-cover border"

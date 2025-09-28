@@ -1,7 +1,25 @@
 const express = require('express');
 const pool = require('../db');
+const nodemailer = require("nodemailer");
 
 const router = express.Router();
+
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+    },
+});
+
+async function sendMail(to, subject, text) {
+  return transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to,
+    subject,
+    text
+  });
+}
 
 
 router.get('/applications', async (req, res) => {
@@ -66,6 +84,7 @@ router.get('/applications/:id', async (req, res) => {
 
 router.patch('/applications/:id/approve', async (req, res) => {
     try {
+        // Update status
         const [result] = await pool.query(
             'UPDATE carwash_applications SET status = "Approved" WHERE applicationId = ?',
             [req.params.id]
@@ -73,8 +92,28 @@ router.patch('/applications/:id/approve', async (req, res) => {
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'Application not found' });
         }
-        res.json({ message: 'Application approved' });
+
+        // Get owner email
+        const [rows] = await pool.query(
+            `SELECT o.owner_email, o.owner_first_name, a.carwashName
+             FROM carwash_applications a
+             JOIN carwash_owners o ON a.ownerId = o.owner_id
+             WHERE a.applicationId = ?`,
+            [req.params.id]
+        );
+        const owner = rows[0];
+        if (owner && owner.owner_email) {
+            // Send email
+            await sendMail(
+                owner.owner_email,
+                "Carwash Application Approved",
+                `Hello ${owner.owner_first_name},\n\nYour carwash "${owner.carwashName}" has been approved!\n\nThank you for using Wash Connect.`
+            );
+        }
+
+        res.json({ message: 'Application approved and email sent' });
     } catch (error) {
+        console.error("Nodemailer error:", error); // <-- Add this line
         res.status(500).json({ error: 'Failed to approve application', details: error.message });
     }
 });
@@ -89,7 +128,26 @@ router.patch('/applications/:id/decline', async (req, res) => {
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'Application not found' });
         }
-        res.json({ message: 'Application declined' });
+
+        // Get owner email
+        const [rows] = await pool.query(
+            `SELECT o.owner_email, o.owner_first_name, a.carwashName
+             FROM carwash_applications a
+             JOIN carwash_owners o ON a.ownerId = o.owner_id
+             WHERE a.applicationId = ?`,
+            [req.params.id]
+        );
+        const owner = rows[0];
+        if (owner && owner.owner_email) {
+            // Send decline email
+            await sendMail(
+                owner.owner_email,
+                "Carwash Application Declined",
+                `Hello ${owner.owner_first_name},\n\nWe regret to inform you that your carwash "${owner.carwashName}" application has been declined.\n\nThank you for using Wash Connect.`
+            );
+        }
+
+        res.json({ message: 'Application declined and email sent' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to decline application', details: error.message });
     }

@@ -127,9 +127,30 @@ export default function BookingHistory() {
                       <span className="text-xs text-gray-500">Customer</span>
                       <span className="ml-auto flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs font-medium">{booking.status || "Completed"}</span>
                     </div>
+                    {/* Show booking creation date/time if available */}
                     <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <span>{new Date(booking.schedule_date).toLocaleDateString()}</span>
-                      <span>{new Date(booking.schedule_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span>
+                        Booked: {booking.created_at
+                          ? new Date(booking.created_at).toLocaleDateString() +
+                            " " +
+                            new Date(booking.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                          : new Date(booking.schedule_date).toLocaleDateString() +
+                            " " +
+                            new Date(booking.schedule_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    {/* Show scheduled date and time */}
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <span>
+                        Scheduled: {booking.schedule_date
+                          ? new Date(booking.schedule_date).toLocaleDateString()
+                          : "N/A"}
+                        {booking.schedule_time && (
+                          <span className="ml-2">
+                            | Time: {booking.schedule_time}
+                          </span>
+                        )}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2 text-sm mt-1">
                       <span className="font-semibold">Address:</span>
