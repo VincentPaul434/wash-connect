@@ -78,7 +78,7 @@ function Feedback() {
           comment: feedback,
         }),
       });
-      if (res.ok) {
+      if (res.ok) { 
         setMsg("Thank you for your feedback!");
         setFeedback("");
         setRating(5);
