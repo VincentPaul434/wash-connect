@@ -60,10 +60,10 @@ function UserDashboard() {
       fetch(`http://localhost:3000/api/bookings/customers/${userId}`)
         .then((res) => res.json())
         .then((bookingsData) => {
-          // Exclude Declined, Completed, and Cancelled bookings
+          // Include Completed bookings in My Bookings
           setBookings(
             (bookingsData || []).filter(
-              (b) => b.status !== "Declined" && b.status !== "Completed" && b.status !== "Cancelled"
+              (b) => b.status !== "Declined" && b.status !== "Cancelled"
             )
           )
         })
