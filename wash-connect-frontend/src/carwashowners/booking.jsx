@@ -5,9 +5,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 const TABS = [
   { key: "overall", label: "Overall Booking" },
   { key: "pending", label: "Pending" },
+  { key: "approved", label: "Approved" },
   { key: "confirmed", label: "Confirmed" },
   { key: "ongoing", label: "On Going" },
-  { key: "completed", label: "Completed" }, // <-- Added Completed tab
 ];
 
 // Sidebar component (inline)
@@ -97,6 +97,7 @@ function Bookings() {
 
   // Fetch applicationId and bookings (same logic as CustomerList)
   useEffect(() => {
+    // Use the same owner key as in CustomerList
     const owner = JSON.parse(localStorage.getItem("carwashOwner"));
     if (!owner || !owner.id) {
       setLoading(false);
@@ -109,10 +110,10 @@ function Bookings() {
       .then(data => {
         if (data && data.applicationId) {
           setApplicationId(data.applicationId);
-          // Fetch ALL bookings for this applicationId
-          fetch(`http://localhost:3000/api/bookings/application/${data.applicationId}`)
-            .then(res => res.ok ? res.json() : [])
-            .then(data => setBookings(Array.isArray(data) ? data : []))
+          // Fetch only confirmed bookings for this applicationId
+          fetch(`http://localhost:3000/api/bookings/confirmed/${data.applicationId}`)
+            .then(res => res.json())
+            .then(setBookings)
             .catch(() => setBookings([]))
             .finally(() => setLoading(false));
         } else {
@@ -122,13 +123,13 @@ function Bookings() {
       .catch(() => setLoading(false));
   }, []);
 
-  // Filter bookings by tab (add completed logic)
+  // Filter bookings by tab (since only confirmed bookings are fetched)
   const filteredBookings = bookings.filter(b => {
     if (activeTab === "overall") return true;
     if (activeTab === "pending") return b.status === "Pending" || b.status === "Pending Approval";
+    if (activeTab === "approved") return b.status === "Approved";
     if (activeTab === "ongoing") return b.status === "On Going";
     if (activeTab === "confirmed") return b.status === "Confirmed";
-    if (activeTab === "completed") return b.status === "Completed"; // <-- Completed filter
     return true;
   });
 
@@ -144,15 +145,15 @@ function Bookings() {
     setBookings(prev => prev.filter(b => b.appointment_id !== id));
   };
 
-  // Get bookings for a customer that match the current tab (add completed logic)
+  // Get bookings for a customer that match the current tab
   const getBookingsForCustomer = (customerId) =>
     bookings.filter(b => {
       if (b.customer_id !== customerId) return false;
       if (activeTab === "overall") return true;
       if (activeTab === "pending") return b.status === "Pending" || b.status === "Pending Approval";
+      if (activeTab === "approved") return b.status === "Approved";
       if (activeTab === "ongoing") return b.status === "On Going";
       if (activeTab === "confirmed") return b.status === "Confirmed";
-      if (activeTab === "completed") return b.status === "Completed"; // <-- Completed filter
       return true;
     });
 
@@ -246,6 +247,11 @@ function Bookings() {
                           Decline
                         </button>
                       </>
+                    )}
+                    {booking.status === "Approved" && (
+                      <button className="flex-1 bg-green-100 text-green-700 rounded px-3 py-1 text-xs font-medium">
+                        Mark as On Going
+                      </button>
                     )}
                     {booking.status === "On Going" && (
                       <button className="flex-1 bg-gray-200 text-gray-700 rounded px-3 py-1 text-xs font-medium">

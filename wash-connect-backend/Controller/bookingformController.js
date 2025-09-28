@@ -16,7 +16,7 @@ exports.createBooking = async (req, res) => {
 
     try {
         const [existing] = await pool.query(
-            "SELECT * FROM bookings WHERE user_id = ? AND status NOT IN ('Declined', 'Done', 'Cancelled', 'Completed')",
+            "SELECT * FROM bookings WHERE user_id = ? AND status NOT IN ('Declined', 'Done', 'Cancelled')",
             [user_id]
         );
         if (existing.length > 0) {
@@ -44,19 +44,21 @@ exports.createBooking = async (req, res) => {
 
 // Get bookings by application
 exports.getBookingsByApplication = async (req, res) => {
-    const { applicationId } = req.params;
-    try {
-        const [rows] = await pool.query(
-            `SELECT b.*, u.email AS customer_email, u.first_name AS customer_first_name, u.last_name AS customer_last_name
-             FROM bookings b
-             LEFT JOIN users u ON b.user_id = u.user_id
-             WHERE b.applicationId = ?`,
-            [applicationId]
-        );
-        res.json(rows);
-    } catch (error) {
-        res.status(500).json({ error: "Failed to fetch bookings", details: error.message });
-    }
+	const { applicationId } = req.params;
+	try {
+		const [rows] = await pool.query(
+			`SELECT b.*, u.first_name AS customer_first_name, u.last_name AS customer_last_name, u.email AS customer_email
+			 FROM bookings b
+			 LEFT JOIN users u ON b.user_id = u.user_id
+			 WHERE b.applicationId = ?
+			 ORDER BY b.schedule_date DESC
+			 LIMIT 10`,
+			[applicationId]
+		);
+		res.json(rows);
+	} catch (error) {
+		res.status(500).json({ error: 'Failed to fetch bookings', details: error.message });
+	}
 };
 
 // Get bookings by customer
@@ -229,29 +231,3 @@ exports.getBookingById = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch booking" });
   }
 };
-
-// Reschedule a booking (update date and time)
-exports.rescheduleBooking = async (req, res) => {
-    const { appointmentId } = req.params;
-    const { schedule_date, schedule_time } = req.body;
-
-    if (!schedule_date || !schedule_time) {
-        return res.status(400).json({ error: "New date and time are required." });
-    }
-
-    try {
-        // Update booking date and time
-        const [result] = await pool.query(
-            "UPDATE bookings SET schedule_date = ?, schedule_time = ? WHERE appointment_id = ?",
-            [schedule_date, schedule_time, appointmentId]
-        );
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: "Booking not found." });
-        }
-        res.json({ success: true, message: "Booking rescheduled." });
-    } catch (error) {
-        res.status(500).json({ error: "Failed to reschedule booking", details: error.message });
-    }
-};
-
-

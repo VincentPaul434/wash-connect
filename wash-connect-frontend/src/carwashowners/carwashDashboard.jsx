@@ -502,8 +502,7 @@ export default function CarwashDashboard() {
 															<button className="flex-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
 																View Details
 															</button>
-															{/* Show Confirm/Decline ONLY if status is Pending */}
-															{booking.status === "Pending" && (
+															{booking.status !== "Confirmed" && booking.status !== "Cancelled" && (
 																<>
 																	<button
 																		className="flex-1 px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium hover:bg-green-600 hover:text-white transition-colors duration-150"
