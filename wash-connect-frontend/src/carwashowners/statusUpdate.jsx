@@ -233,7 +233,7 @@ export default function StatusUpdate() {
             >
               <option value="">Select a booking</option>
               {bookings
-                .filter(b => b.status !== "Cancelled" && b.status !== "Declined")
+                .filter(b => b.status !== "Cancelled" && b.status !== "Declined" && b.status !== "Completed") // <-- Hide completed
                 .map(b => (
                   <option key={b.appointment_id || b.appointmentId} value={b.appointment_id || b.appointmentId}>
                     {(b.customer_first_name || "") + " " + (b.customer_last_name || "")} • {b.service_name} • {new Date(b.schedule_date).toLocaleDateString()}
@@ -257,7 +257,6 @@ export default function StatusUpdate() {
                   className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-200"
                   value={newStatus}
                   onChange={e => setNewStatus(e.target.value)}
-                  disabled={oldStatus === "Completed"} // Disable if already completed
                 >
                   {STATUS_OPTIONS.map(opt => (
                     <option key={opt} value={opt}>{opt}</option>
@@ -271,21 +270,15 @@ export default function StatusUpdate() {
                   value={reason}
                   onChange={e => setReason(e.target.value)}
                   placeholder="Add a reason for the status update (optional)"
-                  disabled={oldStatus === "Completed"} // Disable if already completed
                 />
               </div>
               <button
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded transition mt-2 shadow"
                 onClick={handleUpdate}
-                disabled={loading || oldStatus === "Completed"} // Disable if already completed
+                disabled={loading}
               >
                 {loading ? "Updating..." : "Update Status"}
               </button>
-              {oldStatus === "Completed" && (
-                <div className="mt-2 text-gray-500 text-center font-semibold">
-                  This booking is marked as <span className="text-green-600">Completed</span> and cannot be updated.
-                </div>
-              )}
               {msg && <div className="mt-2 text-green-600 text-center font-semibold">{msg}</div>}
             </div>
           )}

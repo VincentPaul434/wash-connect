@@ -44,10 +44,10 @@ function UserDashboard() {
         firstName: parsedUser.first_name || "",
         lastName: parsedUser.last_name || "",
         email: parsedUser.email || "",
-        contactNumber: parsedUser.phone || "",      // <-- Make sure this is 'phone'
-        address: parsedUser.address || "",          // <-- Make sure this is 'address'
-        birthday: parsedUser.birth_date || "",      // <-- Make sure this is 'birth_date'
-        gender: parsedUser.gender || "",            // <-- Make sure this is 'gender'
+        contactNumber: parsedUser.phone || "",
+        address: parsedUser.address || "",
+        birthday: parsedUser.birth_date || "",
+        gender: parsedUser.gender || "",
       })
     } catch {
       navigate("/login")
@@ -62,41 +62,19 @@ function UserDashboard() {
       fetch(`http://localhost:3000/api/bookings/customers/${userId}`)
         .then((res) => res.json())
         .then((bookingsData) => {
-          // Exclude Declined, Completed, and Cancelled bookings
+          // Exclude Declined, Done, and Cancelled bookings
           const latest = bookingsData.find(
-            (b) => b.status !== "Declined" && b.status !== "Completed" && b.status !== "Cancelled"
+            (b) => b.status !== "Declined" && b.status !== "Done" && b.status !== "Cancelled"
           )
           setActiveBooking(latest)
           setBookings(
             (bookingsData || []).filter(
-              (b) => b.status !== "Declined" && b.status !== "Completed" && b.status !== "Cancelled"
+              (b) => b.status !== "Declined" && b.status !== "Done" && b.status !== "Cancelled"
             )
           )
         })
         .catch(() => {
           setActiveBooking(null)
-          setBookings([])
-        })
-    } else {
-      setBookings([])
-    }
-  }, [])
-
-  // Fetch user's completed bookings for "My Bookings"
-  useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user") || "{}")
-    const userId = user.id || user.user_id
-    if (userId) {
-      fetch(`http://localhost:3000/api/bookings/customers/${userId}`)
-        .then((res) => res.json())
-        .then((bookingsData) => {
-          // Only show completed bookings
-          const completedBookings = (bookingsData || []).filter(
-            (b) => b.status === "Completed"
-          )
-          setBookings(completedBookings)
-        })
-        .catch(() => {
           setBookings([])
         })
     } else {
@@ -156,9 +134,7 @@ function UserDashboard() {
             <FaHeart className="mr-3 w-5 h-5" />
             Bookings
           </div>
-          {/* --- Move horizontal line above Track Status --- */}
-          <hr className="my-4" />
-          {/* --- Track Status Tab --- */}
+          {/* --- Add Track Status Tab Below --- */}
           <div
             className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
             onClick={() => {
@@ -181,6 +157,7 @@ function UserDashboard() {
             <span className="text-gray-700">Track Status</span>
           </div>
           {/* --- End Track Status Tab --- */}
+          <hr className="my-4" />
           <div
             className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
             onClick={() => {
@@ -218,13 +195,11 @@ function UserDashboard() {
           <div className="flex items-center">
             <span className="text-2xl font-bold">My Account</span>
           </div>
-          <div className="flex items-center gap-4 relative">
+          <div className="flex items-center gap-4">
             <span className="text-sm font-medium text-gray-700">{userInfo.firstName || "User"}</span>
             <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center border border-cyan-200">
               <FaUser className="w-5 h-5 text-blue-400" />
             </div>
-            {/* Three dots menu */}
-            <HeaderMenuDropdown navigate={navigate} />
           </div>
         </header>
 
@@ -234,7 +209,7 @@ function UserDashboard() {
             {/* Profile Card */}
             <div className="col-span-1">
               <div className="bg-gradient-to-br from-cyan-100 to-blue-50 rounded-2xl p-8 shadow-xl flex flex-col items-center relative">
-                <div className="relative mb-4 flex flex-col items-center">
+                <div className="relative mb-4">
                   <img
                     src={profilePic || "/placeholder.svg"}
                     alt="Profile"
@@ -311,7 +286,7 @@ function UserDashboard() {
                     Book Now
                   </button>
                 </div>
-                <div className="space-y-5 max-h-96 overflow-y-auto">
+                <div className="space-y-5">
                   {bookings.length === 0 ? (
                     <div className="text-gray-500 text-center py-8">No bookings yet.</div>
                   ) : (
@@ -424,35 +399,6 @@ function UserDashboard() {
       />
     </div>
   )
-}
-
-function HeaderMenuDropdown({ navigate }) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="relative">
-      <button
-        className="p-2 rounded-full hover:bg-gray-200"
-        onClick={() => setOpen((v) => !v)}
-        aria-label="Open menu"
-      >
-        <MoreVertical className="w-6 h-6 text-gray-500" />
-      </button>
-      {open && (
-        <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded shadow-lg z-20">
-          <button
-            className="w-full text-left px-4 py-2 hover:bg-cyan-50 text-cyan-700 font-medium"
-            onClick={() => {
-              setOpen(false);
-              navigate("/feedback");
-            }}
-          >
-            Give Feedback
-          </button>
-        </div>
-      )}
-    </div>
-  );
 }
 
 export default UserDashboard

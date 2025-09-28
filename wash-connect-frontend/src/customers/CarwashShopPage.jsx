@@ -9,7 +9,6 @@ import {
   FaSignOutAlt,
 } from "react-icons/fa";
 import { Search, MapPin } from "lucide-react";
-import toast, { Toaster } from "react-hot-toast";
 
 const MAIN_LOCATIONS = ["All", "Cordova", "Cebu City", "Mandaue", "Lapu-Lapu"];
 
@@ -29,6 +28,7 @@ function CarwashShopPage() {
   const [shops, setShops] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeBooking, setActiveBooking] = useState(null);
+  const [toast, setToast] = useState({ show: false, message: "" });
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -56,17 +56,22 @@ function CarwashShopPage() {
     const userId = user.id || user.user_id;
     if (userId) {
       fetch(`http://localhost:3000/api/bookings/customers/${userId}`)
-        .then((res) => res.ok ? res.json() : [])
-        .then((bookingsData) => {
-          // Exclude Declined, Completed, and Cancelled bookings
-          const latest = (bookingsData || []).find(
-            (b) => b.status !== "Declined" && b.status !== "Completed" && b.status !== "Cancelled"
+        .then((res) => (res.ok ? res.json() : []))
+        .then((bookings) => {
+          const latest = (Array.isArray(bookings) ? bookings : []).find(
+            (b) =>
+              ["Pending", "Confirmed", "On Going", "halfway", "Completed"].includes(b.status)
           );
           setActiveBooking(latest || null);
         })
         .catch(() => setActiveBooking(null));
     }
   }, []);
+
+  const showToast = (message) => {
+    setToast({ show: true, message });
+    setTimeout(() => setToast({ show: false, message: "" }), 3000);
+  };
 
   const filteredShops = useMemo(() => {
     const byLocation = shops.filter((shop) => {
@@ -101,72 +106,20 @@ function CarwashShopPage() {
     });
   };
 
-  const handleTrackStatus = async () => {
-    if (!activeBooking) {
-      toast(
-        <div>
-          <span role="img" aria-label="track" style={{ fontSize: "1.5rem", marginRight: "0.5rem" }}>🔎</span>
-          <span>No active appointment found.</span>
-        </div>,
-        {
-          icon: "🚫",
-        }
-      );
-      return;
-    }
-    try {
-      const res = await fetch(`http://localhost:3000/api/bookings/${activeBooking.appointment_id}`);
-      if (res.ok) {
-        const booking = await res.json();
-        navigate("/track-status", { state: { appointment_id: booking.appointment_id, status: booking.status } });
-      } else {
-        toast(
-          <div>
-            <span role="img" aria-label="track" style={{ fontSize: "1.5rem", marginRight: "0.5rem" }}>🔎</span>
-            <span>Failed to fetch booking status.</span>
-          </div>,
-          {
-            icon: "🚫",
-          }
-        );
-      }
-    } catch {
-      toast(
-        <div>
-          <span role="img" aria-label="track" style={{ fontSize: "1.5rem", marginRight: "0.5rem" }}>🔎</span>
-          <span>Failed to fetch booking status.</span>
-        </div>,
-        {
-          icon: "🚫",
-        }
-      );
-    }
-  };
-
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-[#c7f1ff] to-[#e7f7ff]">
+    <div className="h-screen overflow-hidden flex bg-gradient-to-br from-[#c7f1ff] to-[#e7f7ff]">
       {/* Toast */}
-      <Toaster
-        position="top-center"
-        toastOptions={{
-          style: {
-            background: "#fff",
-            color: "#333",
-            border: "1px solid #a8d6ea",
-            boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-            fontSize: "1rem",
-            padding: "1rem 1.5rem",
-            borderRadius: "0.75rem",
-          },
-          iconTheme: {
-            primary: "#06b6d4",
-            secondary: "#e0f7fa",
-          },
-        }}
-      />
+      {toast.show && (
+        <div className="fixed top-6 right-6 z-50">
+          <div className="bg-cyan-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-slide-in">
+            <FaCalendarAlt className="w-5 h-5" />
+            <span className="font-semibold">{toast.message}</span>
+          </div>
+        </div>
+      )}
 
       {/* Sidebar */}
-      <aside className="w-72 min-h-screen bg-white/90 backdrop-blur border-r border-gray-200 flex flex-col">
+      <div className="w-72 bg-white/90 backdrop-blur border-r border-gray-200 flex flex-col">
         <div className="flex items-center px-8 py-8 border-b border-gray-100">
           <span className="text-3xl" style={{ fontFamily: "Brush Script MT, cursive" }}>
             <span className="text-cyan-500">Wash</span> <span className="text-red-500">Connect</span>
@@ -197,30 +150,13 @@ function CarwashShopPage() {
             Bookings
           </div>
           <hr className="my-4" />
-          {/* Track Status Tab */}
-          <div
-            className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
-            onClick={handleTrackStatus}
-          >
-            <span className="text-xl">🔎</span>
-            <span className="text-gray-700">Track Status</span>
-          </div>
-          {/* Appointment Tab */}
           <div
             className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
             onClick={() => {
               if (activeBooking) {
                 navigate("/booking-confirmation", { state: { appointment_id: activeBooking.appointment_id } });
               } else {
-                toast(
-                  <div>
-                    <span role="img" aria-label="calendar" style={{ fontSize: "1.5rem", marginRight: "0.5rem" }}>📅</span>
-                    <span>No active appointment found.</span>
-                  </div>,
-                  {
-                    icon: "🚫",
-                  }
-                );
+                showToast("No active appointment found.");
               }
             }}
           >
@@ -237,10 +173,10 @@ function CarwashShopPage() {
             </div>
           </div>
         </nav>
-      </aside>
+      </div>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="flex items-center justify-between px-8 py-4 bg-gradient-to-r from-[#7cc3e2] to-[#a8d6ea] border-b border-gray-200">
           <h1 className="text-xl font-semibold text-white">Find a Carwash</h1>
@@ -374,7 +310,18 @@ function CarwashShopPage() {
             )}
           </div>
         </div>
-      </main>
+
+        {/* Toast animation styles */}
+        <style>{`
+          .animate-slide-in {
+            animation: slide-in 0.4s cubic-bezier(.36,.07,.19,.97) both;
+          }
+          @keyframes slide-in {
+            0% { opacity: 0; transform: translateY(-20px) scale(0.95); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+          }
+        `}</style>
+      </div>
     </div>
   );
 }

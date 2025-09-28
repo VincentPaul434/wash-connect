@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Mail, Calendar, User, MapPin, Phone } from "lucide-react";
-import { FaEnvelope, FaUser, FaStar, FaHeart, FaCalendarAlt, FaSignOutAlt } from "react-icons/fa";
+import { FaEnvelope, FaUser, FaStar, FaHeart, FaCalendarAlt, FaSignOutAlt, FaSearch } from "react-icons/fa";
 import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 
@@ -103,10 +103,7 @@ function BookingConfirmation() {
     );
   }
 
-  if (  
-    !booking ||
-    !["Confirmed", "On Going", "halfway", "Completed"].includes(booking.status)
-  ) {
+  if (!booking || !["Confirmed", "On Going", "halfway", "Completed"].includes(booking.status)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#c8f1ff]">
         <div className="bg-white rounded-xl shadow p-8 flex flex-col items-center">
@@ -162,24 +159,6 @@ function BookingConfirmation() {
     setCanceling(false);
   };
 
-  // Helper to get latest payment status
-  const getLatestPaymentStatus = () => {
-    if (Array.isArray(booking?.payments) && booking.payments.length > 0) {
-      // Sort payments by created_at descending and get the latest
-      const sorted = [...booking.payments].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      return sorted[0].payment_status || "Unpaid";
-    }
-    return booking?.payment_status || "Unpaid";
-  };
-
-  const latestPaymentStatus = getLatestPaymentStatus();
-
-  // Helper to check if booking is paid
-  const isPaid =
-    latestPaymentStatus === "Paid" ||
-    (Array.isArray(booking?.payments) &&
-      booking.payments.some((p) => p.payment_status === "Paid"));
-
   return (
     <div className="min-h-screen flex bg-[#c8f1ff]">
       {/* Sidebar */}
@@ -218,6 +197,13 @@ function BookingConfirmation() {
             Bookings
           </div>
           <hr className="my-4" />
+          <div
+            className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
+            onClick={() => navigate('/track-status', { state: { appointment_id } })}
+          >
+            <FaSearch className="mr-3 w-5 h-5" />
+            Track Status
+          </div>
           <div
             className="flex items-center w-full px-4 py-3 rounded-lg bg-cyan-100 text-cyan-700 font-semibold cursor-pointer"
             onClick={() => navigate("/booking-confirmation", { state: { appointment_id } })}
@@ -357,10 +343,7 @@ function BookingConfirmation() {
                   Carwashboy will arrive between <b>{booking.schedule_date}</b>
                 </div>
                 <div className="flex gap-2 mt-3">
-                  <button
-                    className="flex-1 bg-blue-100 text-blue-700 px-3 py-2 rounded font-semibold hover:bg-blue-200 text-sm"
-                    onClick={() => navigate("/reschedule", { state: { appointment_id } })}
-                  >
+                  <button className="flex-1 bg-blue-100 text-blue-700 px-3 py-2 rounded font-semibold hover:bg-blue-200 text-sm">
                     Reschedule
                   </button>
                   <button
@@ -397,19 +380,6 @@ function BookingConfirmation() {
           <div className="w-full md:w-80">
             <div className="bg-white rounded-xl shadow p-6 border border-gray-200 mb-4">
               <div className="font-semibold text-lg mb-2">Payment Summary</div>
-              {/* Show latest payment status */}
-              <div className="mb-2">
-                <span className="font-semibold">Payment Status:</span>
-                <span className={`ml-2 px-2 py-1 rounded text-sm font-semibold ${
-                  latestPaymentStatus === "Paid"
-                    ? "bg-green-100 text-green-700"
-                    : latestPaymentStatus === "Partial"
-                    ? "bg-yellow-100 text-yellow-700"
-                    : "bg-gray-100 text-gray-700"
-                }`}>
-                  {latestPaymentStatus}
-                </span>
-              </div>
               <div className="mb-3">
                 <label className="block text-sm mb-1">Promo code</label>
                 <div className="flex gap-2">
@@ -490,17 +460,27 @@ function BookingConfirmation() {
             </div>
           </div>
         </div>
-        {booking.status === "Completed" && isPaid && (
-          <button
-            className="w-full bg-green-600 text-white py-2 rounded font-semibold mt-4 hover:bg-green-700"
-            onClick={() => {
-              setActiveBooking(null);
-              setBooking(null);
-              navigate("/book");
-            }}
-          >
-            Booking Complete! Book Again
-          </button>
+        {["On Going", "halfway", "Completed"].includes(booking.status) && (
+          <div className="w-full mt-2">
+            <div className="h-2 rounded bg-gray-200 overflow-hidden">
+              <div
+                className={`h-2 rounded transition-all duration-500 ${
+                  booking.status === "On Going"
+                    ? "bg-blue-400 w-1/3"
+                    : booking.status === "halfway"
+                    ? "bg-yellow-400 w-2/3"
+                    : booking.status === "Completed"
+                    ? "bg-green-400 w-full"
+                    : ""
+                }`}
+              />
+            </div>
+            <div className="flex justify-between text-xs mt-1 text-gray-500">
+              <span>On Going</span>
+              <span>Halfway</span>
+              <span>Completed</span>
+            </div>
+          </div>
         )}
       </div>
     </div>

@@ -41,8 +41,7 @@ function BookForm() {
   const [personnelList, setPersonnelList] = useState([]);
   const [selectedPersonnelId, setSelectedPersonnelId] = useState("");
   const [fetchedServices, setFetchedServices] = useState([]);
-  // Check if the booking is completed and paid (after booking is made)
-  const [bookingStatus, setBookingStatus] = useState({ completed: false, paid: false });
+ 
 
   // Prefill from navigation state (user profile info)
   useEffect(() => {
@@ -179,25 +178,6 @@ function BookForm() {
         fetch(`http://localhost:3000/api/bookings/customers/${userId}`).then((r) => r.json());
       }
     }
-  }, [appointment_id]);
-
-  // Check if the booking is completed and paid (after booking is made)
-  useEffect(() => {
-    if (!appointment_id) return;
-    setBookingStatus({ completed: false, paid: false });
-
-    fetch(`http://localhost:3000/api/bookings/with-personnel/${appointment_id}`)
-      .then(res => res.ok ? res.json() : null)
-      .then(bookingData => {
-        if (bookingData) {
-          const completed = bookingData.status === "Completed";
-          const paid = Array.isArray(bookingData.payments) && bookingData.payments.some(p => p.payment_status === "Paid");
-          setBookingStatus({ completed, paid });
-        }
-      })
-      .catch(() => {
-        setBookingStatus({ completed: false, paid: false });
-      });
   }, [appointment_id]);
 
   const selectedPersonnel = personnelList.find(
@@ -454,13 +434,6 @@ function BookForm() {
               {submitting ? "Submitting..." : "Submit"}
             </button>
           </form>
-
-          {/* Example usage: show a message if booking is completed and paid */}
-          {bookingStatus.completed && bookingStatus.paid && (
-            <div className="bg-green-100 text-green-700 rounded p-4 mb-4 text-center">
-              Your booking is <b>Completed</b> and <b>Paid</b>. Thank you!
-            </div>
-          )}
         </div>
       </div>
 

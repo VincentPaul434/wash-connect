@@ -1,3 +1,4 @@
+
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
@@ -11,7 +12,7 @@ exports.login = async (req, res) => {
 		}
 
 		const [accounts] = await pool.query(
-			`SELECT user_id AS id, first_name, last_name, email, password, status, role, phone, address, birth_date, gender
+			`SELECT user_id AS id, first_name, last_name, email, password, status, role 
 			 FROM users 
 			 WHERE email = ? OR user_id = ?`,
 			[identifier, identifier]
@@ -57,11 +58,7 @@ exports.login = async (req, res) => {
 				last_name: account.last_name,
 				email: account.email,
 				role: account.role,
-				status: account.status,
-				phone: account.phone,
-				address: account.address,
-				birth_date: account.birth_date,
-				gender: account.gender
+				status: account.status
 			}
 		});
 	} catch (err) {

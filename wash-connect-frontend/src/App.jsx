@@ -32,8 +32,6 @@ import BookingStatus from './customers/bookingStatus';
 import PersonnelDetails from './carwashowners/PersonnelDetails';
 import StatusUpdate from './carwashowners/statusUpdate';
 import TrackStatus from './customers/trackStatus';
-import RescheduleForm from './customers/RescheduleForm';
-import Feedback from './customers/feedback';
 
 function App() {
     return (
@@ -51,8 +49,7 @@ function App() {
                 <Route path="/payment" element={<Payment />} />
                 <Route path="/banned" element={<BannedPage />} />
                 <Route path="/booking-status" element={<BookingStatus />} />
-                <Route path="/reschedule" element={<RescheduleForm />} />
-                <Route path="/feedback" element={<Feedback />} /> 
+                
 
                 {/* Carwash Owner Routes */}
                 <Route path="/carwash-register" element={<CarwashRegister />} />
