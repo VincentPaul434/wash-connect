@@ -14,7 +14,6 @@ import {
   MoreVertical,
 } from "lucide-react"
 import { FaEnvelope, FaUser, FaStar, FaHeart } from "react-icons/fa"
-import toast, { Toaster } from "react-hot-toast"
 
 function UserDashboard() {
   const navigate = useNavigate()
@@ -28,7 +27,6 @@ function UserDashboard() {
     gender: "",
   })
   const [profilePic, setProfilePic] = useState(null)
-  const [activeBooking, setActiveBooking] = useState(null)
   const [bookings, setBookings] = useState([])
 
   useEffect(() => {
@@ -63,38 +61,11 @@ function UserDashboard() {
         .then((res) => res.json())
         .then((bookingsData) => {
           // Exclude Declined, Completed, and Cancelled bookings
-          const latest = bookingsData.find(
-            (b) => b.status !== "Declined" && b.status !== "Completed" && b.status !== "Cancelled"
-          )
-          setActiveBooking(latest)
           setBookings(
             (bookingsData || []).filter(
               (b) => b.status !== "Declined" && b.status !== "Completed" && b.status !== "Cancelled"
             )
           )
-        })
-        .catch(() => {
-          setActiveBooking(null)
-          setBookings([])
-        })
-    } else {
-      setBookings([])
-    }
-  }, [])
-
-  // Fetch user's completed bookings for "My Bookings"
-  useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user") || "{}")
-    const userId = user.id || user.user_id
-    if (userId) {
-      fetch(`http://localhost:3000/api/bookings/customers/${userId}`)
-        .then((res) => res.json())
-        .then((bookingsData) => {
-          // Only show completed bookings
-          const completedBookings = (bookingsData || []).filter(
-            (b) => b.status === "Completed"
-          )
-          setBookings(completedBookings)
         })
         .catch(() => {
           setBookings([])
@@ -161,21 +132,7 @@ function UserDashboard() {
           {/* --- Track Status Tab --- */}
           <div
             className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
-            onClick={() => {
-              if (activeBooking) {
-                navigate("/track-status", { state: { appointment_id: activeBooking.appointment_id } });
-              } else {
-                toast(
-                  <div>
-                    <span role="img" aria-label="track" style={{ fontSize: "1.5rem", marginRight: "0.5rem" }}>🔎</span>
-                    <span>No active appointment found.</span>
-                  </div>,
-                  {
-                    icon: "🚫",
-                  }
-                );
-              }
-            }}
+            onClick={() => navigate("/track-status")}
           >
             <span className="text-xl">🔎</span>
             <span className="text-gray-700">Track Status</span>
@@ -184,18 +141,14 @@ function UserDashboard() {
           <div
             className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
             onClick={() => {
+              // Find the latest active booking (not Declined, Cancelled, Completed)
+              const activeBooking = bookings.find(
+                (b) => !["Declined", "Cancelled", "Completed"].includes(b.status)
+              );
               if (activeBooking) {
                 navigate("/booking-confirmation", { state: { appointment_id: activeBooking.appointment_id } });
               } else {
-                toast(
-                  <div>
-                    <span role="img" aria-label="calendar" style={{ fontSize: "1.5rem", marginRight: "0.5rem" }}>📅</span>
-                    <span>No active appointment found.</span>
-                  </div>,
-                  {
-                    icon: "🚫",
-                  }
-                );
+                navigate("/booking-confirmation");
               }
             }}
           >
@@ -404,24 +357,6 @@ function UserDashboard() {
           </div>
         </div>
       </div>
-      <Toaster
-        position="top-center"
-        toastOptions={{
-          style: {
-            background: "#fff",
-            color: "#333",
-            border: "1px solid #a8d6ea",
-            boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-            fontSize: "1rem",
-            padding: "1rem 1.5rem",
-            borderRadius: "0.75rem",
-          },
-          iconTheme: {
-            primary: "#06b6d4",
-            secondary: "#e0f7fa",
-          },
-        }}
-      />
     </div>
   )
 }

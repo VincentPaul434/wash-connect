@@ -233,7 +233,7 @@ export default function StatusUpdate() {
             >
               <option value="">Select a booking</option>
               {bookings
-                .filter(b => b.status !== "Cancelled" && b.status !== "Declined")
+                .filter(b => !["Cancelled", "Declined", "Completed"].includes(b.status))
                 .map(b => (
                   <option key={b.appointment_id || b.appointmentId} value={b.appointment_id || b.appointmentId}>
                     {(b.customer_first_name || "") + " " + (b.customer_last_name || "")} • {b.service_name} • {new Date(b.schedule_date).toLocaleDateString()}

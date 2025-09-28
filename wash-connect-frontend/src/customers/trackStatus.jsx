@@ -1,79 +1,65 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { FaEnvelope, FaUser, FaStar, FaHeart, FaRegCheckSquare, FaCalendarAlt } from "react-icons/fa";
-import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
+import { FaEnvelope, FaUser, FaStar, FaHeart, FaCalendarAlt } from "react-icons/fa";
 
-const STATUS_STEPS = [
-  { key: "On Going", label: "On Going" },
-  { key: "halfway", label: "Halfway" },
-  { key: "Completed", label: "Completed" },
-];
 
 export default function TrackStatus() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const appointment_id = location.state?.appointment_id;
 
-  const [booking, setBooking] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [reason, setReason] = useState("");
+  const [bookings, setBookings] = useState([]);
+  const [searchId, setSearchId] = useState("");
+  const [filtered, setFiltered] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 5;
 
+  // Fetch bookings for current user
   useEffect(() => {
-    async function fetchBooking() {
-      setLoading(true);
-      setError("");
-      try {
-        if (!appointment_id) {
-          setError("No booking selected.");
-          setLoading(false);
-          return;
-        }
-        const res = await fetch(`http://localhost:3000/api/bookings/with-personnel/${appointment_id}`);
-        if (!res.ok) {
-          setError("Booking not found.");
-          setLoading(false);
-          return;
-        }
-        const data = await res.json();
-        setBooking(data);
-      } catch {
-        setError("Failed to fetch booking.");
-      }
-      setLoading(false);
-    }
-    fetchBooking();
-  }, [appointment_id]);
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const userId = user.id || user.user_id;
+    if (!userId) return;
+    fetch(`http://localhost:3000/api/bookings/customers/${userId}`)
+      .then((res) => res.json())
+      .then((data) => setBookings(data || []));
+  }, []);
 
+  // Filter bookings by search
   useEffect(() => {
-    async function fetchReason() {
-      if (!appointment_id) return;
-      try {
-        const res = await fetch(`http://localhost:3000/api/bookings/reason/${appointment_id}`);
-        const data = await res.json();
-        console.log("Fetched reason:", data.reason); // <-- Add this
-        setReason(data.reason || "");
-      } catch {
-        setReason("");
-      }
+    let rows = bookings;
+    if (searchId.trim()) {
+      rows = rows.filter(b => String(b.appointment_id).includes(searchId.trim()));
     }
-    fetchReason();
-  }, [appointment_id]);
+    setFiltered(rows);
+    setCurrentPage(1);
+  }, [bookings, searchId]);
 
-  // Find current step index
-  const currentStep = STATUS_STEPS.findIndex(
-    (step) => step.key.toLowerCase() === (booking?.status || "").toLowerCase()
+  // Filter for Completed and On Going bookings first
+  const filteredBookings = bookings.filter(
+    (b) => ["Completed", "On Going"].includes(b.status)
   );
 
-  // Helper to check if booking is paid
-  const isPaid =
-    booking?.payment_status === "Paid" ||
-    (Array.isArray(booking?.payments) &&
-      booking.payments.some((p) => p.payment_status === "Paid"));
+  // Sort by schedule_date descending (latest first)
+  const sortedBookings = [...filteredBookings].sort((a, b) => {
+    if (a.schedule_date && b.schedule_date) {
+      return new Date(b.schedule_date) - new Date(a.schedule_date);
+    }
+    return (b.appointment_id || 0) - (a.appointment_id || 0);
+  });
+
+  // Apply search filter
+  const searchedBookings = searchId.trim()
+    ? sortedBookings.filter(b => String(b.appointment_id).includes(searchId.trim()))
+    : sortedBookings;
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(searchedBookings.length / pageSize));
+  const paged = searchedBookings.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  // Get first active booking for sidebar actions
+
 
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-cyan-50 to-blue-100">
-      {/* Sidebar - same design flow as UserDashboard */}
+      {/* Sidebar */}
       <div className="w-72 bg-white border-r border-gray-200 flex flex-col min-h-screen shadow-lg">
         <div className="flex items-center px-8 py-8 border-b border-gray-100">
           <span className="text-3xl" style={{ fontFamily: "Brush Script MT, cursive" }}>
@@ -81,7 +67,6 @@ export default function TrackStatus() {
             <span className="text-red-500">Connect</span>
           </span>
         </div>
-        {/* Navigation */}
         <nav className="flex-1 px-4 py-6 space-y-2">
           <div className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer">
             <FaEnvelope className="mr-3 w-5 h-5" />
@@ -110,46 +95,15 @@ export default function TrackStatus() {
           {/* Track Status Tab */}
           <div
             className="flex items-center w-full px-4 py-3 rounded-lg bg-cyan-100 text-cyan-700 font-semibold cursor-pointer"
-            onClick={() => {
-              if (appointment_id) {
-                navigate("/track-status", { state: { appointment_id } });
-              } else {
-                toast(
-                  <div>
-                    <span role="img" aria-label="track" style={{ fontSize: "1.5rem", marginRight: "0.5rem" }}>🔎</span>
-                    <span>No active appointment found.</span>
-                  </div>,
-                  {
-                    icon: "🚫",
-                  }
-                );
-              }
-            }}
+            onClick={() => navigate("/track-status")}
           >
             <span className="text-xl">🔎</span>
             <span className="text-gray-700">Track Status</span>
           </div>
-          {/* Change "Booking Status" to "Appointment" */}
+          {/* Appointment Tab */}
           <div
             className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
-            onClick={() => {
-              if (
-                booking &&
-                ["Confirmed", "On Going", "halfway", "Completed"].includes(booking.status)
-              ) {
-                navigate("/booking-confirmation", { state: { appointment_id: booking.appointment_id } });
-              } else {
-                toast(
-                  <div>
-                    <span role="img" aria-label="calendar" style={{ fontSize: "1.5rem", marginRight: "0.5rem" }}>📅</span>
-                    <span>No active appointment found.</span>
-                  </div>,
-                  {
-                    icon: "🚫",
-                  }
-                );
-              }
-            }}
+            onClick={() => navigate("/booking-confirmation")}
           >
             <FaCalendarAlt className="mr-3 w-5 h-5" />
             Appointment
@@ -164,103 +118,101 @@ export default function TrackStatus() {
       </div>
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-lg border border-blue-100">
+        <div className="max-w-3xl w-full bg-white p-8 rounded-2xl shadow-lg border border-blue-100">
           <h2 className="text-2xl font-bold mb-6 text-blue-700 text-center">
-            Booking Progress
+            Track Status
           </h2>
-          {loading ? (
-            <div className="text-center text-gray-500">Loading...</div>
-          ) : error ? (
-            <div className="text-center text-red-600">{error}</div>
-          ) : booking ? (
-            <>
-              {/* Progress Bar */}
-              <div className="mb-8">
-                <div className="flex items-center justify-between w-full px-2">
-                  {STATUS_STEPS.map((step, idx) => (
-                    <React.Fragment key={step.key}>
-                      <div className="flex flex-col items-center">
-                        <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center font-bold
-                            ${idx <= currentStep ? "bg-purple-700 text-white" : "bg-gray-400 text-white"}
-                          `}
-                        >
-                          {idx + 1}
-                        </div>
-                        <span className={`mt-2 text-xs font-semibold ${idx <= currentStep ? "text-purple-700" : "text-gray-500"}`}>
-                          {step.label}
+          <div className="flex gap-2 mb-4">
+            <input
+              type="text"
+              placeholder="Enter Booking ID"
+              className="border px-3 py-2 rounded w-64"
+              value={searchId}
+              onChange={e => setSearchId(e.target.value)}
+            />
+            <button
+              className="border px-4 py-2 rounded bg-gray-100 hover:bg-gray-200"
+              onClick={() => setSearchId(searchId)}
+            >
+              Track
+            </button>
+            <button
+              className="border px-4 py-2 rounded bg-gray-100 hover:bg-gray-200"
+              onClick={() => setSearchId("")}
+            >
+              My Bookings
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full border mb-2">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="border px-4 py-2">Booking ID</th>
+                  <th className="border px-4 py-2">Service</th>
+                  <th className="border px-4 py-2">Date</th>
+                  <th className="border px-4 py-2">Status</th>
+                  <th className="border px-4 py-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paged.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="text-center py-8 text-gray-500">No bookings found.</td>
+                  </tr>
+                ) : (
+                  paged.map(b => (
+                    <tr key={b.appointment_id}>
+                      <td className="border px-4 py-2">{b.appointment_id}</td>
+                      <td className="border px-4 py-2">{b.service_name}</td>
+                      <td className="border px-4 py-2">{b.schedule_date?.slice(0,16).replace("T"," ")}</td>
+                      <td className="border px-4 py-2">
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                          b.status === "Completed"
+                            ? "bg-green-100 text-green-700"
+                            : b.status === "Halfway"
+                            ? "bg-yellow-100 text-yellow-700"
+                            : b.status === "Confirmed"
+                            ? "bg-purple-100 text-purple-700"
+                            : b.status === "On Going"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-gray-100 text-gray-700"
+                        }`}>
+                          {b.status}
                         </span>
-                      </div>
-                      {idx < STATUS_STEPS.length - 1 && (
-                        <div className={`flex-1 h-2 mx-1 rounded ${idx < currentStep ? "bg-purple-700" : "bg-gray-300"}`}></div>
-                      )}
-                    </React.Fragment>
-                  ))}
-                </div>
-              </div>
-              {/* Carwash Boy Display */}
-              <div className="mb-2 flex items-center gap-2 justify-center">
-                <span className="font-semibold text-gray-700">Carwash Boy:</span>
-                <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-semibold">
-                  {booking.personnel_first_name} {booking.personnel_last_name}
-                </span>
-              </div>
-              {/* Carwash Service Display */}
-              <div className="mb-4 flex items-center gap-2 justify-center">
-                <span className="font-semibold text-gray-700">Service Booked:</span>
-                <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-semibold">
-                  {booking.service_name}
-                </span>
-              </div>
-              {/* Status Display */}
-              <div className="flex flex-col items-center gap-2">
-                <div className={`px-6 py-3 rounded-lg text-xl font-semibold ${
-                  booking.status === "Completed"
-                    ? "bg-green-100 text-green-700"
-                    : booking.status === "halfway"
-                    ? "bg-yellow-100 text-yellow-700"
-                    : booking.status === "On Going"
-                    ? "bg-blue-100 text-blue-700"
-                    : "bg-gray-100 text-gray-700"
-                }`}>
-                  {booking.status}
-                </div>
-              </div>
-              {/* Reason Display */}
-              <div className="mt-4 flex items-center gap-2 justify-center">
-                <span className="font-semibold text-gray-700">Reason:</span>
-                <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full font-medium">
-                  {reason ? reason : "No reason provided."}
-                </span>
-              </div>
-              {/* Confirm Completion & Book Again Button */}
-              {booking.status === "Completed" && isPaid && (
-                <button
-                  className="mt-6 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded transition"
-                  onClick={() => {
-                    setBooking(null);
-                    toast.success("Booking completed! Would you like to leave feedback?");
-                    navigate("/feedback", { state: { appointment_id: booking.appointment_id } });
-                  }}
-                >
-                  Confirm Completion & Book Again
-                </button>
-              )}
-              {booking.status === "Completed" && !isPaid && (
-                <div className="mt-6 w-full bg-yellow-100 text-yellow-700 font-bold py-2 rounded text-center">
-                  You must complete payment before confirming completion.
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="text-center text-gray-500">No booking details found.</div>
-          )}
-          <button
-            className="mt-8 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded transition"
-            onClick={() => navigate(-1)}
-          >
-            Back
-          </button>
+                      </td>
+                      <td className="border px-4 py-2">
+                        <button
+                          className="text-blue-600 underline"
+                          onClick={() => navigate("/track-status-details", { state: { appointment_id: b.appointment_id } })}
+                        >
+                          Track
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-sm text-gray-500">
+              Page {currentPage} of {totalPages} · Showing {paged.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}-{(currentPage - 1) * pageSize + paged.length} of {filtered.length}
+            </span>
+            <button
+              className="border px-2 py-1 rounded disabled:opacity-50"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            >
+              Prev
+            </button>
+            <button
+              className="border px-2 py-1 rounded disabled:opacity-50"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            >
+              Next
+            </button>
+          </div>
         </div>
       </main>
     </div>

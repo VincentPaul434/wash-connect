@@ -2,39 +2,6 @@ import React, { useEffect, useState } from "react";
 import { FaEnvelope, FaPhone, FaUserCircle, FaStar, FaRegStar, FaEye, FaBars, FaRegEnvelope, FaRegUser, FaRegCheckSquare, FaRegFolderOpen, FaTrophy, FaRegEye } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
-const reviews = [
-	{
-		service: "Full detailing",
-		stars: 5,
-		desc: "From John Doe 1.2 miles away lorem ipsum dolor sit amet...",
-		img: "https://randomuser.me/api/portraits/men/35.jpg",
-	},
-	{
-		service: "Basic carwash",
-		stars: 4,
-		desc: "From John Doe 1.2 miles away lorem ipsum dolor sit amet...",
-		img: "https://randomuser.me/api/portraits/men/36.jpg",
-	},
-	{
-		service: "Ceramic Coating",
-		stars: 3,
-		desc: "From John Doe 1.2 miles away lorem ipsum dolor sit amet...",
-		img: "https://randomuser.me/api/portraits/men/37.jpg",
-	},
-	{
-		service: "Engine Detailing",
-		stars: 4,
-		desc: "From John Doe 1.2 miles away lorem ipsum dolor sit amet...",
-		img: "https://randomuser.me/api/portraits/men/38.jpg",
-	},
-	{
-		service: "Motorwash",
-		stars: 2,
-		desc: "From John Doe 1.2 miles away lorem ipsum dolor sit amet...",
-		img: "https://randomuser.me/api/portraits/men/39.jpg",
-	},
-];
-
 export default function CarwashDashboard() {
     const [recentBookings, setRecentBookings] = useState([]);
     const [activeTab, setActiveTab] = useState("overview");
@@ -47,6 +14,7 @@ export default function CarwashDashboard() {
     const [showAddSvc, setShowAddSvc] = useState(false);
     const [svcForm, setSvcForm] = useState({ name: "", price: "", description: "" });
     const [svcFile, setSvcFile] = useState(null);
+    const [reviews, setReviews] = useState([]); // <-- Use state for reviews
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -80,6 +48,11 @@ export default function CarwashDashboard() {
                     const svcRes = await fetch(`http://localhost:3000/api/services/by-application/${appData.applicationId}`);
                     const svcData = await svcRes.json();
                     setServices(Array.isArray(svcData) ? svcData : []);
+
+                    // Fetch reviews for this carwash application
+                    const reviewsRes = await fetch(`http://localhost:3000/api/reviews/by-application/${appData.applicationId}`);
+                    const reviewsData = await reviewsRes.json();
+                    setReviews(Array.isArray(reviewsData) ? reviewsData : []);
                 }
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -452,7 +425,7 @@ export default function CarwashDashboard() {
 									View All
 								</button>
 							</div>
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ maxHeight: "350px", overflowY: "auto" }}>
 								{recentBookings.length === 0 && (
 									<div className="text-gray-500 text-center col-span-2">No recent bookings.</div>
 								)}
@@ -645,30 +618,35 @@ export default function CarwashDashboard() {
 						<div className="bg-white rounded-lg shadow p-6">
 							<h4 className="font-semibold text-lg mb-4">Reviews</h4>
 							<div className="space-y-4">
-								{reviews.map((r, i) => (
-									<div key={i} className="flex items-center gap-3">
-										<img
-											src={r.img}
-											alt=""
-											className="w-10 h-10 rounded-full"
-										/>
-										<div className="flex-1">
-											<div className="font-semibold text-sm">{r.service}</div>
-											<div className="text-xs text-gray-500 truncate">
-												{r.desc}
+								{reviews.length === 0 ? (
+									<div className="text-gray-500 text-sm">No reviews yet.</div>
+								) : (
+									reviews.map((r, i) => (
+										<div key={i} className="flex items-center gap-3">
+											<img
+												src={r.customer_avatar || "https://ui-avatars.com/api/?name=" + encodeURIComponent(r.customer_name || "Customer")}
+												alt=""
+												className="w-10 h-10 rounded-full"
+											/>
+											<div className="flex-1">
+												<div className="font-semibold text-sm">{r.service_name || "Service"}</div>
+												<div className="text-xs text-gray-500 truncate">
+													{r.comment}
+												</div>
+												<div className="text-xs text-gray-400">{r.customer_name}</div>
+											</div>
+											<div className="flex gap-0.5">
+												{[...Array(5)].map((_, idx) =>
+													idx < (r.rating || 0) ? (
+														<FaStar key={idx} className="text-yellow-400 text-xs" />
+													) : (
+														<FaRegStar key={idx} className="text-gray-300 text-xs" />
+													)
+												)}
 											</div>
 										</div>
-										<div className="flex gap-0.5">
-											{[...Array(5)].map((_, idx) =>
-												idx < r.stars ? (
-													<FaStar key={idx} className="text-yellow-400 text-xs" />
-												) : (
-													<FaRegStar key={idx} className="text-gray-300 text-xs" />
-												)
-											)}
-										</div>
-									</div>
-								))}
+									))
+								)}
 							</div>
 						</div>
 					</aside>

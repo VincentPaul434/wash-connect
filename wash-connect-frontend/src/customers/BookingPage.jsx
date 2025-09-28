@@ -64,6 +64,7 @@ function BookingPage() {
 		fetch(`http://localhost:3000/api/bookings/customers/${userId}`)
 			.then((res) => res.ok ? res.json() : Promise.reject())
 			.then((bookings) => {
+				// Only treat Declined, Cancelled, Completed as inactive
 				const active = Array.isArray(bookings)
 					? bookings.find((b) => !["Declined", "Cancelled", "Completed"].includes(b.status))
 					: null;
@@ -167,46 +168,10 @@ function BookingPage() {
 		});
 	};
 
+	// Remove the toast for "No active appointment found" in handleTrackStatus
 	const handleTrackStatus = async () => {
-		if (!activeBooking) {
-			toast(
-				<div>
-					<span role="img" aria-label="track" style={{ fontSize: "1.5rem", marginRight: "0.5rem" }}>🔎</span>
-					<span>No active appointment found.</span>
-				</div>,
-				{
-					icon: "🚫",
-				}
-			);
-			return;
-		}
-		try {
-			const res = await fetch(`http://localhost:3000/api/bookings/${activeBooking.appointment_id}`);
-			if (res.ok) {
-				const booking = await res.json();
-				navigate("/track-status", { state: { appointment_id: booking.appointment_id, status: booking.status } });
-			} else {
-				toast(
-					<div>
-						<span role="img" aria-label="track" style={{ fontSize: "1.5rem", marginRight: "0.5rem" }}>🔎</span>
-						<span>Failed to fetch booking status.</span>
-					</div>,
-					{
-						icon: "🚫",
-					}
-				);
-			}
-		} catch {
-			toast(
-				<div>
-					<span role="img" aria-label="track" style={{ fontSize: "1.5rem", marginRight: "0.5rem" }}>🔎</span>
-					<span>Failed to fetch booking status.</span>
-				</div>,
-				{
-					icon: "🚫",
-				}
-			);
-		}
+		// Directly navigate to track-status page, no toast or activeBooking check
+		navigate("/track-status");
 	};
 
 	return (

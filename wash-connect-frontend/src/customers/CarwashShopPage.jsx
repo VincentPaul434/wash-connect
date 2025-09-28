@@ -58,9 +58,9 @@ function CarwashShopPage() {
       fetch(`http://localhost:3000/api/bookings/customers/${userId}`)
         .then((res) => res.ok ? res.json() : [])
         .then((bookingsData) => {
-          // Exclude Declined, Completed, and Cancelled bookings
+          // Only treat Declined, Cancelled, Completed as inactive
           const latest = (bookingsData || []).find(
-            (b) => b.status !== "Declined" && b.status !== "Completed" && b.status !== "Cancelled"
+            (b) => !["Declined", "Cancelled", "Completed"].includes(b.status)
           );
           setActiveBooking(latest || null);
         })
@@ -99,48 +99,6 @@ function CarwashShopPage() {
     navigate("/book", {
       state: { applicationId: shop.applicationId, carwashName: shop.carwashName },
     });
-  };
-
-  const handleTrackStatus = async () => {
-    if (!activeBooking) {
-      toast(
-        <div>
-          <span role="img" aria-label="track" style={{ fontSize: "1.5rem", marginRight: "0.5rem" }}>🔎</span>
-          <span>No active appointment found.</span>
-        </div>,
-        {
-          icon: "🚫",
-        }
-      );
-      return;
-    }
-    try {
-      const res = await fetch(`http://localhost:3000/api/bookings/${activeBooking.appointment_id}`);
-      if (res.ok) {
-        const booking = await res.json();
-        navigate("/track-status", { state: { appointment_id: booking.appointment_id, status: booking.status } });
-      } else {
-        toast(
-          <div>
-            <span role="img" aria-label="track" style={{ fontSize: "1.5rem", marginRight: "0.5rem" }}>🔎</span>
-            <span>Failed to fetch booking status.</span>
-          </div>,
-          {
-            icon: "🚫",
-          }
-        );
-      }
-    } catch {
-      toast(
-        <div>
-          <span role="img" aria-label="track" style={{ fontSize: "1.5rem", marginRight: "0.5rem" }}>🔎</span>
-          <span>Failed to fetch booking status.</span>
-        </div>,
-        {
-          icon: "🚫",
-        }
-      );
-    }
   };
 
   return (
@@ -189,7 +147,7 @@ function CarwashShopPage() {
             <FaStar className="mr-3 w-5 h-5" />
             Carwash Shops
           </div>
-          <div
+          <div  
             className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
             onClick={() => navigate("/book")}
           >
@@ -200,7 +158,7 @@ function CarwashShopPage() {
           {/* Track Status Tab */}
           <div
             className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
-            onClick={handleTrackStatus}
+            onClick={() => navigate("/track-status")}
           >
             <span className="text-xl">🔎</span>
             <span className="text-gray-700">Track Status</span>

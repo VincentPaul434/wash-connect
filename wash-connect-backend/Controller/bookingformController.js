@@ -20,7 +20,7 @@ exports.createBooking = async (req, res) => {
             [user_id]
         );
         if (existing.length > 0) {
-            return res.status(400).json({ error: "You already have an active booking." });
+            return res.status(400).json({ error: "You have an active booking. Please complete and pay before booking again." });
         }
         if (!user_id || !applicationId || !service_name || !schedule_date || !schedule_time || !address || price === undefined) {
             return res.status(400).json({ error: 'Missing required fields' });
@@ -60,23 +60,34 @@ exports.getBookingsByApplication = async (req, res) => {
 };
 
 // Get bookings by customer
+// ...existing code...
+// Get bookings by customer
+// ...existing code...
+// ...existing code...
 exports.getBookingsByCustomer = async (req, res) => {
-	const { userId } = req.params;
-	try {
-		const [rows] = await pool.query(
-			`SELECT b.*, u.first_name AS customer_first_name, u.last_name AS customer_last_name, u.email AS customer_email
-			 FROM bookings b
-			 LEFT JOIN users u ON b.user_id = u.user_id
-			 WHERE b.user_id = ?
-			 ORDER BY b.schedule_date DESC
-			 LIMIT 10`,
-			[userId]
-		);
-		res.json(rows);
-	} catch (error) {
-		res.status(500).json({ error: 'Failed to fetch bookings', details: error.message });
-	}
+    const { userId } = req.params;
+    try {
+        const [rows] = await pool.query(
+            `SELECT b.*, 
+                    u.first_name AS customer_first_name, 
+                    u.last_name AS customer_last_name, 
+                    u.email AS customer_email,
+                    ca.carwashName AS carwash_name
+             FROM bookings b
+             LEFT JOIN users u ON b.user_id = u.user_id
+             LEFT JOIN carwash_applications ca ON b.applicationId = ca.applicationId
+             WHERE b.user_id = ?
+             ORDER BY b.schedule_date DESC`, // <-- removed LIMIT 10
+            [userId]
+        );
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch bookings', details: error.message });
+    }
 };
+// ...existing code...
+// ...existing code...
+// ...existing code...
 
 // Confirm a booking
 exports.confirmBooking = async (req, res) => {

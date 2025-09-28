@@ -37,6 +37,12 @@ exports.createPayment = async (req, res) => {
       [appointmentId, user_id, amount, method, receipt_url || null, payment_status]
     );
 
+    // Update booking payment_status to latest
+    await pool.query(
+      'UPDATE bookings SET payment_status = ? WHERE appointment_id = ?',
+      [payment_status, appointmentId]
+    );
+
     res.status(201).json({ success: true, message: 'Payment recorded.' });
   } catch (error) {
     console.error(error);
@@ -68,6 +74,12 @@ exports.updatePayment = async (req, res) => {
     await pool.query(
       'INSERT INTO payments (appointment_id, user_id, amount, method, receipt_url, payment_status) VALUES (?, ?, ?, ?, ?, ?)',
       [appointmentId, user_id, amount, method, receipt_url || null, payment_status]
+    );
+
+    // Update booking payment_status to latest
+    await pool.query(
+      'UPDATE bookings SET payment_status = ? WHERE appointment_id = ?',
+      [payment_status, appointmentId]
     );
 
     res.json({ success: true, message: 'Additional payment recorded.' });
