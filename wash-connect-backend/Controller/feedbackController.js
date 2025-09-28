@@ -1,9 +1,8 @@
-
 const pool = require('../db');
 
 exports.submitFeedback = async (req, res) => {
 	const { appointmentId } = req.params;
-	const { customer_name, rating, comment } = req.body;
+	const { user_id, rating, comment } = req.body;
 
 	// Validate appointmentId is a positive integer
 	const appointmentIdNum = Number(appointmentId);
@@ -12,8 +11,8 @@ exports.submitFeedback = async (req, res) => {
 	}
 
 	// Validate required fields
-	if (!rating || !customer_name) {
-		return res.status(400).json({ error: 'Rating and customer name are required.' });
+	if (!rating || !user_id) {
+		return res.status(400).json({ error: 'Rating and user ID are required.' });
 	}
 
 	// Validate rating is a number (optional: check range)
@@ -23,12 +22,43 @@ exports.submitFeedback = async (req, res) => {
 	}
 
 	try {
+		// Get user name from database
+		const [rows] = await pool.query(
+			"SELECT first_name, last_name FROM users WHERE user_id = ?",
+			[user_id]
+		);
+		if (rows.length === 0) {
+			return res.status(404).json({ error: "User not found." });
+		}
+		const customer_name = `${rows[0].first_name} ${rows[0].last_name}`;
+
 		await pool.query(
-			"INSERT INTO booking_reviews (appointment_id, customer_name, rating, comment) VALUES (?, ?, ?, ?)",
+			"INSERT INTO booking_feedbacks (appointment_id, customer_name, rating, comment) VALUES (?, ?, ?, ?)",
 			[appointmentIdNum, customer_name, ratingNum, comment]
 		);
 		res.json({ success: true, message: "Feedback submitted!" });
 	} catch (err) {
+		console.error(err); // Add this line
 		res.status(500).json({ error: "Failed to save feedback.", details: err.message });
 	}
+};
+
+exports.getReviewsByApplication = async (req, res) => {
+    const { applicationId } = req.params;
+    if (!applicationId || isNaN(Number(applicationId))) {
+        return res.status(400).json({ error: "Invalid application ID." });
+    }
+    try {
+        const [rows] = await pool.query(
+            `SELECT bf.*, b.service_name
+             FROM booking_feedbacks bf
+             JOIN bookings b ON bf.appointment_id = b.appointment_id
+             WHERE b.applicationId = ?`,
+            [applicationId]
+        );
+        res.json(rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to fetch reviews.", details: err.message });
+    }
 };

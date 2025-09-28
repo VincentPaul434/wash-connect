@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Mail, Calendar, User, MapPin, Phone } from "lucide-react";
-import { FaEnvelope, FaUser, FaStar, FaHeart, FaCalendarAlt, FaSignOutAlt } from "react-icons/fa";
+import { FaEnvelope, FaUser, FaStar, FaHeart, FaCalendarAlt, FaSignOutAlt, FaSearch } from "react-icons/fa";
 import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 
@@ -197,6 +197,13 @@ function BookingConfirmation() {
             Bookings
           </div>
           <hr className="my-4" />
+          <div
+            className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
+            onClick={() => navigate('/track-status', { state: { appointment_id } })}
+          >
+            <FaSearch className="mr-3 w-5 h-5" />
+            Track Status
+          </div>
           <div
             className="flex items-center w-full px-4 py-3 rounded-lg bg-cyan-100 text-cyan-700 font-semibold cursor-pointer"
             onClick={() => navigate("/booking-confirmation", { state: { appointment_id } })}
