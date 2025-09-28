@@ -61,21 +61,27 @@ exports.getBookingsByApplication = async (req, res) => {
 
 // Get bookings by customer
 exports.getBookingsByCustomer = async (req, res) => {
-	const { userId } = req.params;
-	try {
-		const [rows] = await pool.query(
-			`SELECT b.*, u.first_name AS customer_first_name, u.last_name AS customer_last_name, u.email AS customer_email
-			 FROM bookings b
-			 LEFT JOIN users u ON b.user_id = u.user_id
-			 WHERE b.user_id = ?
-			 ORDER BY b.schedule_date DESC
-			 LIMIT 10`,
-			[userId]
-		);
-		res.json(rows);
-	} catch (error) {
-		res.status(500).json({ error: 'Failed to fetch bookings', details: error.message });
-	}
+    const { userId } = req.params;
+    try {
+        const [rows] = await pool.query(
+            `SELECT b.*, 
+                u.first_name AS customer_first_name, 
+                u.last_name AS customer_last_name, 
+                u.email AS customer_email,
+                ca.carwashName AS carwash_name,
+                ca.location AS carwash_location
+             FROM bookings b
+             LEFT JOIN users u ON b.user_id = u.user_id
+             LEFT JOIN carwash_applications ca ON b.applicationId = ca.applicationId
+             WHERE b.user_id = ?
+             ORDER BY b.schedule_date DESC
+             LIMIT 10`,
+            [userId]
+        );
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch bookings', details: error.message });
+    }
 };
 
 // Confirm a booking
@@ -113,11 +119,10 @@ exports.getConfirmedBookingsByApplication = async (req, res) => {
 	}
 };
 
-// Get booking with personnel details
+// Get booking with personnel and carwash info
 exports.getBookingWithPersonnel = async (req, res) => {
     const { appointmentId } = req.params;
     try {
-        // Get booking and personnel info
         const [rows] = await pool.query(
             `SELECT 
                 b.*, 
@@ -130,10 +135,13 @@ exports.getBookingWithPersonnel = async (req, res) => {
                 p.last_name AS personnel_last_name, 
                 p.address AS personnel_address, 
                 p.email AS personnel_email, 
-                p.avatar AS personnel_avatar
+                p.avatar AS personnel_avatar,
+                ca.carwashName AS carwash_name,
+                ca.location AS carwash_location
             FROM bookings b
             LEFT JOIN users u ON b.user_id = u.user_id
             LEFT JOIN personnel p ON b.personnelId = p.personnelId
+            LEFT JOIN carwash_applications ca ON b.applicationId = ca.applicationId
             WHERE b.appointment_id = ?`,
             [appointmentId]
         );
@@ -147,7 +155,7 @@ exports.getBookingWithPersonnel = async (req, res) => {
             "SELECT * FROM payments WHERE appointment_id = ?",
             [appointmentId]
         );
-        booking.payments = payments; // Add payments array to booking
+        booking.payments = payments;
 
         res.json(booking);
     } catch (error) {

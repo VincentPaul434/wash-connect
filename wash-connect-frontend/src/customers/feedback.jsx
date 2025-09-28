@@ -116,7 +116,11 @@ function Feedback() {
           >
             {eligibleBookings.map(b => (
               <option key={b.appointment_id} value={b.appointment_id}>
-                {b.carwash_name || "Carwash"} — {b.date} {b.time}
+                {(b.carwash_name || b.carwash_name || "Carwash")} — 
+                {b.date ? ` ${b.date}` : ""} 
+                {b.time ? ` ${b.time}` : ""}
+                {b.service_name ? ` — ${b.service_name}` : ""}
+                {b.appointment_id ? ` (#${b.appointment_id})` : ""}
               </option>
             ))}
           </select>
