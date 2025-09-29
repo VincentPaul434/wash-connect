@@ -32,9 +32,11 @@ exports.createPayment = async (req, res) => {
       // Example: if frontend also sends expected total target, you could compare there.
     }
 
+    // In your payment creation logic
+    const tax = amount * 0.10;
     await pool.query(
-      'INSERT INTO payments (appointment_id, user_id, amount, method, receipt_url, payment_status) VALUES (?, ?, ?, ?, ?, ?)',
-      [appointmentId, user_id, amount, method, receipt_url || null, payment_status]
+      "INSERT INTO payments (appointment_id, user_id, amount, method, payment_status, tax) VALUES (?, ?, ?, ?, ?, ?)",
+      [appointmentId, user_id, amount, method, payment_status, tax]
     );
 
     // Update booking payment_status to latest
@@ -152,5 +154,32 @@ exports.getPaymentByAppointment = async (req, res) => {
     res.json({ payment: rows }); // returns all payments for that appointment
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch payments" });
+  }
+};
+
+// GET: All payments of all services (for admin)
+exports.getAllPayments = async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT 
+        p.payment_id,
+        p.appointment_id,
+        p.user_id,
+        p.amount,
+        p.method,
+        p.receipt_url,
+        p.payment_status,
+        p.created_at AS date,
+        b.service_name,
+        b.price AS booking_price,
+        b.status AS booking_status
+      FROM payments p
+      JOIN bookings b ON p.appointment_id = b.appointment_id
+      ORDER BY p.payment_id DESC`
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch all payments', details: error.message });
   }
 };

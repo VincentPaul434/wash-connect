@@ -54,7 +54,15 @@ function Sidebar() {
         >
           <span className="text-lg">★</span> Customers & Employee
         </button>
-        <hr className="my-2 border-gray-300" />
+        {/* Status Update tab below Customers & Employee */}
+        <button
+          className="flex items-center gap-2 mb-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200 w-full text-left"
+          onClick={() => navigate("/status-update")}
+        >
+          <FaRegCheckSquare className="text-lg" />
+          <span>Status Update</span>
+        </button>
+        {/* Manage Bookings */}
         <button
           className={`flex items-center gap-2 mb-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200 w-full text-left ${
             location.pathname === "/bookings"
@@ -66,7 +74,9 @@ function Sidebar() {
           <FaRegCheckSquare className="text-lg" />
           <span>Manage Bookings</span>
         </button>
-        <div className="flex items-center gap-2 mb-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200">
+        <div className="flex items-center gap-2 mb-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200"
+          onClick={() => navigate("/booking-history")}
+        >
           <FaRegCheckSquare className="text-lg" />
           <span>Booking History</span>
         </div>

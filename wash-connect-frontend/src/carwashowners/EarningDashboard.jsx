@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { FaRegCheckSquare, FaTrophy, FaUserCircle, FaDownload } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { Bar, Doughnut } from "react-chartjs-2";
+import { Chart, CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend } from "chart.js";
+Chart.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
 
 export default function EarningDashboard() {
   const navigate = useNavigate();
@@ -9,6 +12,7 @@ export default function EarningDashboard() {
   const [carwash, setCarwash] = useState({ carwashName: "Carwash", logo: "" });
   const [payments, setPayments] = useState([]);
   const [apiSummary, setApiSummary] = useState({ total_amount: 0, total_paid: 0, total_refunded: 0 });
+  const [services, setServices] = useState([]);
 
   // Load owner -> application -> payments
   useEffect(() => {
@@ -38,6 +42,7 @@ export default function EarningDashboard() {
         if (!applicationId) {
           setPayments([]);
           setApiSummary({ total_amount: 0, total_paid: 0, total_refunded: 0 });
+          setServices([]);
           return;
         }
 
@@ -46,6 +51,11 @@ export default function EarningDashboard() {
         const payData = await payRes.json();
         setPayments(Array.isArray(payData?.payments) ? payData.payments : []);
         setApiSummary(payData?.summary || { total_amount: 0, total_paid: 0, total_refunded: 0 });
+
+        // Fetch services for this carwash
+        const svcRes = await fetch(`http://localhost:3000/api/services/by-application/${applicationId}`);
+        const svcData = await svcRes.json();
+        setServices(Array.isArray(svcData) ? svcData : []);
       } catch {
         setPayments([]);
         setApiSummary({ total_amount: 0, total_paid: 0, total_refunded: 0 });
@@ -141,8 +151,8 @@ export default function EarningDashboard() {
         totalServices,
         efficiency: `${efficiencyPct}%`,
         logoUrl: carwash.logo,
-        bestMonth: { name: best.name, profit: `${best.value.toLocaleString()}` },
-        lowestMonth: { name: low.name, profit: `${low.value.toLocaleString()}` },
+        bestMonth: { name: best.name, profit: best.value },
+        lowestMonth: { name: low.name, profit: low.value },
         income: income.toLocaleString(),
         incomeChange: `${deltaPct >= 0 ? "↑" : "↓"} ${Math.abs(deltaPct)}% this month`,
         expense: refunds.toLocaleString(),
@@ -154,6 +164,67 @@ export default function EarningDashboard() {
       details: detailsRows.sort((a, b) => (a.date < b.date ? 1 : -1)),
     };
   }, [payments, apiSummary, carwash.carwashName, carwash.logo, nowLabel]);
+
+  // Prepare analytics data
+  const totalIncome = details.filter((d) => d.type === "Income").reduce((sum, d) => sum + d.amount, 0);
+  const totalRefund = details.filter((d) => d.type === "Refund").reduce((sum, d) => sum + d.amount, 0);
+  const byStatus = details.reduce((acc, d) => {
+    acc[d.status] = (acc[d.status] || 0) + d.amount;
+    return acc;
+  }, {});
+
+  // Chart data
+  const doughnutData = {
+    labels: ["Income", "Refund"],
+    datasets: [
+      {
+        data: [totalIncome, totalRefund],
+        backgroundColor: ["#34d399", "#f87171"],
+      },
+    ],
+  };
+
+  const barData = {
+    labels: Object.keys(byStatus),
+    datasets: [
+      {
+        label: "Amount by Status",
+        data: Object.values(byStatus),
+        backgroundColor: ["#38bdf8", "#fbbf24", "#34d399", "#f87171", "#a78bfa"],
+      },
+    ],
+  };
+
+  // Prepare Net Income Trend chart data (Bar chart for last 6 months)
+  const trendLabels = trend.map((month) => month.short);
+  const trendValues = trend.map((month) => month.value);
+  const trendBarData = {
+    labels: trendLabels,
+    datasets: [
+      {
+        label: "Net Income",
+        data: trendValues,
+        backgroundColor: trendValues.map((v) =>
+          v > 0 ? "#34d399" : v < 0 ? "#f87171" : "#fbbf24"
+        ),
+      },
+    ],
+  };
+
+  // Count finished services (each service with at least one finished booking)
+  const finishedServicesCount = useMemo(() => {
+    if (!services.length || !payments.length) return 0;
+    return services.filter(svc =>
+      payments.some(p =>
+        (p.service_id === svc.service_id || p.service_id === svc.id) &&
+        (
+          String(p.booking_status).toLowerCase().includes("complete") ||
+          String(p.booking_status).toLowerCase().includes("finished") ||
+          String(p.booking_status).toLowerCase() === "done"
+        )
+      )
+    ).length;
+  }, [services, payments]);
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
@@ -172,6 +243,14 @@ export default function EarningDashboard() {
         <nav className="flex-1 px-4 space-y-2">
           <button className="w-full flex items-center gap-2 px-3 py-2 rounded transition-colors duration-200 hover:bg-gray-100 cursor-pointer" onClick={() => navigate("/carwash-dashboard")}>Overview</button>
           <button className="w-full flex items-center gap-2 px-3 py-2 rounded transition-colors duration-200 hover:bg-gray-100 cursor-pointer" onClick={() => navigate("/customer-list")}>Customers & Employee</button>
+          {/* Status Update tab below Customers & Employee */}
+          <button
+            className="flex items-center gap-2 mb-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200 w-full text-left"
+            onClick={() => navigate("/status-update")}
+          >
+            <FaRegCheckSquare className="text-lg" />
+            <span>Status Update</span>
+          </button>
           <hr className="my-2 border-gray-300" />
           <button className="flex items-center gap-2 mb-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200 w-full text-left" onClick={() => navigate("/bookings")}> <FaRegCheckSquare className="text-lg" /> <span>Manage Bookings</span> </button>
           <button className="flex items-center gap-2 mb-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200 w-full text-left" onClick={() => navigate("/booking-history")}> <FaRegCheckSquare className="text-lg" /> <span>Booking History</span> </button>
@@ -195,7 +274,7 @@ export default function EarningDashboard() {
           </div>
         </header>
 
-        <div className="flex-1 grid grid-cols-3 gap-6 p-8">
+        <div className="flex-1 grid grid-cols-3 gap-6 p-8 overflow-auto">
           {/* Summary Section */}
           <section className="col-span-2 space-y-6">
             <div className="flex gap-6">
@@ -207,8 +286,8 @@ export default function EarningDashboard() {
                 </div>
                 <div className="flex items-center gap-8 mt-4">
                   <div>
-                    <span className="font-bold text-lg">{summary.finished}</span>
-                    <span className="text-xs text-gray-500 ml-1">/ {summary.totalServices} services</span>
+                    <span className="font-bold text-lg">{finishedServicesCount}</span>
+                    <span className="text-xs text-gray-500 ml-1">/ {services.length} services</span>
                   </div>
                   <div>
                     <span className="font-bold text-lg">{summary.efficiency}</span>
@@ -254,23 +333,31 @@ export default function EarningDashboard() {
 
             {/* Net Income Trend */}
             <div className="bg-white rounded-xl shadow p-6">
-              <h4 className="font-semibold mb-2">Net Income Trend</h4>
-              <div className="flex items-end gap-2 h-32">
-                {trend.map((month) => (
-                  <div key={month.name} className="flex flex-col items-center justify-end h-full">
-                    <div
-                      className={`w-6 rounded ${month.value > 0 ? "bg-green-400" : month.value < 0 ? "bg-red-400" : "bg-yellow-400"}`}
-                      style={{ height: `${Math.min(100, Math.abs(month.value) / Math.max(1, Math.abs(apiSummary.total_amount)) * 100)}%` }}
-                    ></div>
-                    <span className="text-xs mt-1">{month.short}</span>
-                  </div>
-                ))}
+              <h4 className="font-semibold mb-2">Net Income Trend (Last 6 Months)</h4>
+              <div style={{ width: "100%", height: "200px" }}>
+                <Bar
+                  data={trendBarData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: { display: false },
+                      tooltip: { callbacks: { label: (ctx) => `₱${ctx.parsed.y.toLocaleString()}` } },
+                    },
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        ticks: { callback: (value) => `₱${value.toLocaleString()}` },
+                      },
+                    },
+                  }}
+                />
               </div>
             </div>
           </section>
 
-          {/* Income & Expense Details */}
-          <section className="col-span-1">
+          {/* Income & Expense Details + Analytics Charts */}
+          <section className="col-span-1 space-y-6">
             <div className="bg-white rounded-xl shadow p-6">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="font-semibold">Income & Refund Details</h4>
@@ -294,55 +381,89 @@ export default function EarningDashboard() {
                   <FaDownload className="text-sm" /> Export
                 </button>
               </div>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-gray-500">
-                    <th className="py-2 text-left">Date</th>
-                    <th className="py-2 text-left">Type</th>
-                    <th className="py-2 text-left">Description</th>
-                    <th className="py-2 text-left">Amount</th>
-                    <th className="py-2 text-left">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {details.map((row, idx) => (
-                    <tr key={idx} className="border-t">
-                      <td className="py-2">{row.date}</td>
-                      <td className="py-2">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
-                            row.type === "Income"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
-                          }`}
-                        >
-                          {row.type}
-                        </span>
-                      </td>
-                      <td className="py-2">{row.description}</td>
-                      <td className="py-2">{fmtPHP(row.amount)}</td>
-                      <td className="py-2">
-                        <span
-                          className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                            row.status === "Completed"
-                              ? "bg-green-200 text-green-800"
-                              : row.status === "Refunded"
-                              ? "bg-red-200 text-red-800"
-                              : "bg-gray-200 text-gray-800"
-                          }`}
-                        >
-                          {row.status}
-                        </span>
-                      </td>
+              <div style={{ maxHeight: "180px", overflowY: "auto" }}>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-gray-500">
+                      <th className="py-2 text-left">Date</th>
+                      <th className="py-2 text-left">Type</th>
+                      <th className="py-2 text-left">Description</th>
+                      <th className="py-2 text-left">Amount</th>
+                      <th className="py-2 text-left">Status</th>
                     </tr>
-                  ))}
-                  {details.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="text-center text-gray-400 py-4">No data available.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {details.map((row, idx) => (
+                      <tr key={idx} className="border-t">
+                        <td className="py-2">{row.date}</td>
+                        <td className="py-2">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
+                              row.type === "Income"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-red-100 text-red-700"
+                            }`}
+                          >
+                            {row.type}
+                          </span>
+                        </td>
+                        <td className="py-2">{row.description}</td>
+                        <td className="py-2">{fmtPHP(row.amount)}</td>
+                        <td className="py-2">
+                          <span
+                            className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                              row.status === "Completed"
+                                ? "bg-green-200 text-green-800"
+                                : row.status === "Refunded"
+                                ? "bg-red-200 text-red-800"
+                                : "bg-gray-200 text-gray-800"
+                            }`}
+                          >
+                            {row.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                    {details.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="text-center text-gray-400 py-4">No data available.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white rounded-xl shadow p-4 border border-gray-100 flex flex-col items-center">
+                <h4 className="font-semibold mb-2">Income vs Refund</h4>
+                <div style={{ width: "100%", maxWidth: 120, height: 120 }}>
+                  <Doughnut data={doughnutData} options={{ maintainAspectRatio: false }} />
+                </div>
+                <div className="mt-2 text-center text-xs">
+                  <span className="text-green-600 font-bold">Income: {fmtPHP(totalIncome)}</span>
+                  <br />
+                  <span className="text-red-600 font-bold">Refund: {fmtPHP(totalRefund)}</span>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl shadow p-4 border border-gray-100 flex flex-col items-center">
+                <h4 className="font-semibold mb-2">Payments by Status</h4>
+                <div style={{ width: "100%", maxWidth: 140, height: 120 }}>
+                  <Bar
+                    data={barData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: { legend: { display: false } },
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                          ticks: { callback: (value) => `₱${value.toLocaleString()}` },
+                        },
+                      },
+                    }}
+                  />
+                </div>
+              </div>
             </div>
           </section>
         </div>

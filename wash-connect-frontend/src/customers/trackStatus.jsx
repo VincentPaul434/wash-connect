@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaEnvelope, FaUser, FaStar, FaHeart, FaCalendarAlt } from "react-icons/fa";
-
+import { toast, Toaster } from "react-hot-toast"; // Add this import if not present
 
 export default function TrackStatus() {
   const navigate = useNavigate();
 
   const [bookings, setBookings] = useState([]);
   const [searchId, setSearchId] = useState("");
-  const [filtered, setFiltered] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5;
 
@@ -22,43 +21,31 @@ export default function TrackStatus() {
       .then((data) => setBookings(data || []));
   }, []);
 
-  // Filter bookings by search
-  useEffect(() => {
-    let rows = bookings;
-    if (searchId.trim()) {
-      rows = rows.filter(b => String(b.appointment_id).includes(searchId.trim()));
-    }
-    setFiltered(rows);
-    setCurrentPage(1);
-  }, [bookings, searchId]);
-
-  // Filter for Completed and On Going bookings first
+  // Filter for Completed, On Going, and Halfway bookings first
   const filteredBookings = bookings.filter(
-    (b) => ["Completed", "On Going"].includes(b.status)
+    (b) => ["Completed", "On Going", "Halfway"].includes(b.status)
   );
 
-  // Sort by schedule_date descending (latest first)
-  const sortedBookings = [...filteredBookings].sort((a, b) => {
-    if (a.schedule_date && b.schedule_date) {
-      return new Date(b.schedule_date) - new Date(a.schedule_date);
+  // Apply search filter
+  const searchedBookings = searchId.trim()
+    ? filteredBookings.filter(b => String(b.appointment_id).includes(searchId.trim()))
+    : filteredBookings;
+
+  // Sort by updated_at descending (latest first)
+  const sortedBookings = [...searchedBookings].sort((a, b) => {
+    if (a.updated_at && b.updated_at) {
+      return new Date(b.updated_at) - new Date(a.updated_at);
     }
     return (b.appointment_id || 0) - (a.appointment_id || 0);
   });
 
-  // Apply search filter
-  const searchedBookings = searchId.trim()
-    ? sortedBookings.filter(b => String(b.appointment_id).includes(searchId.trim()))
-    : sortedBookings;
-
   // Pagination
-  const totalPages = Math.max(1, Math.ceil(searchedBookings.length / pageSize));
-  const paged = searchedBookings.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-
-  // Get first active booking for sidebar actions
-
+  const totalPages = Math.max(1, Math.ceil(sortedBookings.length / pageSize));
+  const paged = sortedBookings.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-cyan-50 to-blue-100">
+      <Toaster position="top-right" /> {/* Add this line at the top level of your component */}
       {/* Sidebar */}
       <div className="w-72 bg-white border-r border-gray-200 flex flex-col min-h-screen shadow-lg">
         <div className="flex items-center px-8 py-8 border-b border-gray-100">
@@ -111,8 +98,7 @@ export default function TrackStatus() {
               if (activeBooking) {
                 navigate("/booking-confirmation", { state: { appointment_id: activeBooking.appointment_id } });
               } else {
-                // Optionally show a toast or alert
-                // toast("No active appointment found. Please book a service first!", { icon: "📅" });
+                toast("No active appointment found.", { icon: "📅" });
               }
             }}
           >
@@ -162,20 +148,24 @@ export default function TrackStatus() {
                   <th className="border px-4 py-2">Service</th>
                   <th className="border px-4 py-2">Date</th>
                   <th className="border px-4 py-2">Status</th>
-                  <th className="border px-4 py-2">Actions</th>
+                  {/* Removed Actions column */}
                 </tr>
               </thead>
               <tbody>
                 {paged.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="text-center py-8 text-gray-500">No bookings found.</td>
+                    <td colSpan={4} className="text-center py-8 text-gray-500">No bookings found.</td>
                   </tr>
                 ) : (
                   paged.map(b => (
                     <tr key={b.appointment_id}>
                       <td className="border px-4 py-2">{b.appointment_id}</td>
                       <td className="border px-4 py-2">{b.service_name}</td>
-                      <td className="border px-4 py-2">{b.schedule_date?.slice(0,16).replace("T"," ")}</td>
+                      <td className="border px-4 py-2">
+                        {b.updated_at
+                          ? b.updated_at.slice(0, 16).replace("T", " ")
+                          : ""}
+                      </td>
                       <td className="border px-4 py-2">
                         <span className={`px-2 py-1 rounded text-xs font-semibold ${
                           b.status === "Completed"
@@ -191,14 +181,7 @@ export default function TrackStatus() {
                           {b.status}
                         </span>
                       </td>
-                      <td className="border px-4 py-2">
-                        <button
-                          className="text-blue-600 underline"
-                          onClick={() => navigate("/track-status-details", { state: { appointment_id: b.appointment_id } })}
-                        >
-                          Track
-                        </button>
-                      </td>
+                      {/* Removed Actions button cell */}
                     </tr>
                   ))
                 )}
@@ -207,7 +190,7 @@ export default function TrackStatus() {
           </div>
           <div className="flex items-center gap-2 mt-2">
             <span className="text-sm text-gray-500">
-              Page {currentPage} of {totalPages} · Showing {paged.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}-{(currentPage - 1) * pageSize + paged.length} of {filtered.length}
+              Page {currentPage} of {totalPages} · Showing {paged.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}-{(currentPage - 1) * pageSize + paged.length} of {sortedBookings.length}
             </span>
             <button
               className="border px-2 py-1 rounded disabled:opacity-50"

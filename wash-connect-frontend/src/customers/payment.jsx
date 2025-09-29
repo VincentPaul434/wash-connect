@@ -96,31 +96,6 @@ function Payment() {
     }
   };
 
-  const handlePayRemaining = async () => {
-    setUploading(true);
-    const res = await fetch(
-      `http://localhost:3000/api/bookings/payment/${appointment_id}`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id: booking?.user_id || booking?.customer_id,
-          amount: remaining,
-          method,
-          payment_status: "Paid",
-        }),
-      }
-    );
-    setUploading(false);
-    if (res.ok) {
-      alert("Remaining balance paid!");
-      navigate(`/booking-confirmation`);
-    } else {
-      const errorData = await res.json();
-      alert("Payment failed: " + (errorData.error || "Please try again."));
-    }
-  };
-
   if (!appointment_id) {
     return <div>No appointment_id provided for payment.</div>;
   }
@@ -156,10 +131,19 @@ function Payment() {
               min="0"
               step="0.01"
               className="w-full border rounded px-3 py-2 text-lg"
-              placeholder={`₱ Enter amount${subtotal > 0 ? ` (e.g. ${subtotal})` : ""}`}
+              placeholder={`₱ Enter amount (max ₱${(subtotal - previousPayments).toLocaleString()})`}
               value={amount}
-              onChange={e => setAmount(e.target.value)}
+              onChange={e => {
+                const val = e.target.value;
+                // Prevent entering more than subtotal - previousPayments
+                if (parseFloat(val) > subtotal - previousPayments) {
+                  setAmount(String(subtotal - previousPayments));
+                } else {
+                  setAmount(val);
+                }
+              }}
               required
+              max={subtotal - previousPayments}
             />
             <div className="text-xs text-gray-500 mt-1">
               Enter the amount received from the client.
@@ -230,14 +214,6 @@ function Payment() {
               disabled={uploading}
             >
               Cancel
-            </button>
-            <button
-              type="button"
-              className="bg-blue-500 text-white px-6 py-2 rounded font-semibold hover:bg-blue-600"
-              onClick={handlePayRemaining}
-              disabled={subtotal - previousPayments <= 0 || uploading}
-            >
-              Pay Remaining
             </button>
           </div>
         </form>

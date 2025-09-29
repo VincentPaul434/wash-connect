@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Mail, Calendar, User, MapPin, Phone } from "lucide-react";
-import { FaEnvelope, FaUser, FaStar, FaHeart, FaCalendarAlt, FaSignOutAlt } from "react-icons/fa";
+import { FaEnvelope, FaUser, FaStar, FaHeart, FaCalendarAlt, FaSignOutAlt, FaUndo } from "react-icons/fa";
 import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 
@@ -16,6 +16,12 @@ function BookingConfirmation() {
   const [cancelSuccess, setCancelSuccess] = useState(false);
   const [activeBooking, setActiveBooking] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Modal state for Request Refund
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [refundReason, setRefundReason] = useState("");
+  const [refundLoading, setRefundLoading] = useState(false);
+  const [refundSuccess, setRefundSuccess] = useState(false);
 
   // Fetch booking details
   useEffect(() => {
@@ -160,6 +166,29 @@ function BookingConfirmation() {
       alert("Failed to cancel booking.");
     }
     setCanceling(false);
+  };
+
+  // Handle refund request
+  const handleRequestRefund = async () => {
+    setRefundLoading(true);
+    try {
+      const res = await fetch(`http://localhost:3000/api/bookings/request-refund/${appointment_id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: refundReason }),
+      });
+      if (res.ok) {
+        setRefundSuccess(true);
+        setRefundReason("");
+      } else {
+        setRefundSuccess(false);
+        alert("Failed to request refund.");
+      }
+    } catch {
+      setRefundSuccess(false);
+      alert("Failed to request refund.");
+    }
+    setRefundLoading(false);
   };
 
   // Helper to get latest payment status
@@ -446,19 +475,6 @@ function BookingConfirmation() {
                   {latestPaymentStatus}
                 </span>
               </div>
-              <div className="mb-3">
-                <label className="block text-sm mb-1">Promo code</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Type here.."
-                    className="flex-1 px-3 py-1 border rounded bg-blue-50"
-                  />
-                  <button className="px-3 py-1 bg-blue-200 rounded hover:bg-blue-300 text-sm">
-                    Apply
-                  </button>
-                </div>
-              </div>
               <div className="bg-white border rounded p-4 mb-3">
                 <div className="flex justify-between mb-2">
                   <span>Subtotal</span>
@@ -496,7 +512,7 @@ function BookingConfirmation() {
                   })
                 }
               >
-                Pay Now 
+                Pay Now
               </button>
               <button
                 className="w-full bg-gray-200 text-gray-700 py-2 rounded font-semibold hover:bg-gray-300"
@@ -505,24 +521,20 @@ function BookingConfirmation() {
               >
                 {canceling ? "Cancelling..." : booking.status === "Declined" ? "Booking Cancelled" : "Request Cancellation"}
               </button>
+              {/* Request Refund Button */}
+              {isPaid && (
+                <button
+                  className="w-full bg-red-500 text-white py-2 rounded font-semibold mt-2 hover:bg-red-600 flex items-center justify-center gap-2"
+                  onClick={() => setShowRefundModal(true)}
+                >
+                  <FaUndo /> Request a Refund
+                </button>
+              )}
               {cancelSuccess && (
                 <div className="text-red-600 mt-2 font-semibold">
                   Booking has been cancelled.
                 </div>
               )}
-              <div className="mt-4 bg-blue-50 rounded p-2 flex items-center gap-2">
-                <img
-                  src="https://cdn-icons-png.flaticon.com/512/616/616489.png"
-                  alt="Refer"
-                  className="w-10 h-10"
-                />
-                <div>
-                  <div className="font-semibold text-sm">Refer a friend and get rewarded!</div>
-                  <button className="mt-1 px-2 py-1 bg-blue-200 rounded text-xs font-semibold hover:bg-blue-300">
-                    Refer Now
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -539,6 +551,49 @@ function BookingConfirmation() {
           </button>
         )}
       </div>
+      {/* Request Refund Modal */}
+      {showRefundModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <FaUndo className="text-lg" /> Request a Refund
+            </h2>
+            <label className="block mb-2 font-medium">Reason for refund:</label>
+            <textarea
+              className="w-full border rounded p-2 mb-4"
+              rows={3}
+              value={refundReason}
+              onChange={e => setRefundReason(e.target.value)}
+              placeholder="Enter reason for refund..."
+            />
+            <div className="flex gap-3">
+              <button
+                className="bg-blue-600 text-white px-4 py-2 rounded font-semibold hover:bg-blue-700"
+                onClick={handleRequestRefund}
+                disabled={refundLoading || !refundReason}
+              >
+                {refundLoading ? "Requesting..." : "Submit Request"}
+              </button>
+              <button
+                className="bg-gray-200 text-gray-700 px-4 py-2 rounded font-semibold hover:bg-gray-300"
+                onClick={() => {
+                  setShowRefundModal(false);
+                  setRefundReason("");
+                  setRefundSuccess(false);
+                }}
+                disabled={refundLoading}
+              >
+                Cancel
+              </button>
+            </div>
+            {refundSuccess && (
+              <div className="text-green-600 mt-4 font-semibold">
+                Refund request submitted!
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

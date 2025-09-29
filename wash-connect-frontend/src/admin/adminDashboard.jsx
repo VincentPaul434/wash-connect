@@ -1,35 +1,82 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Trophy, Eye, Users, FileText, Inbox, LogOut, UserCircle } from "lucide-react";
+import { Bar, Doughnut } from "react-chartjs-2";
+import { Chart, CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend } from "chart.js";
+Chart.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
+
+function getAnalytics(payments) {
+  const totalIncome = payments.reduce((sum, p) => sum + (p.amount > 0 ? Number(p.amount) : 0), 0);
+  const totalRefund = payments.reduce((sum, p) => sum + (p.amount < 0 ? Math.abs(Number(p.amount)) : 0), 0);
+  const byMethod = {};
+  payments.forEach(p => {
+    byMethod[p.method] = (byMethod[p.method] || 0) + Number(p.amount);
+  });
+  return { totalIncome, totalRefund, byMethod };
+}
+
 function AdminDashboard() {
-  const [activeMenu, setActiveMenu] = useState("dashboard");
+  const [payments, setPayments] = useState([]);
   const navigate = useNavigate();
 
-  const bestMonth = { month: "March 2024", profit: "$12,800" };
-  const lowestMonth = { month: "July 2024", profit: "$6,500" };
-  const totalIncome = 12800;
-  const expenses = 5600;
-  const netProfit = 7200;
-  const netIncomeTrend = [
-    { month: "Jan", value: 9000 },
-    { month: "Feb", value: 12000 },
-    { month: "Mar", value: 12800 },
-    { month: "Apr", value: 8000 },
-    { month: "May", value: 9000 },
-    { month: "Jun", value: 6500 },
-    { month: "Jul", value: 6500 },
-    { month: "Aug", value: 11000 },
-    { month: "Sep", value: 9500 },
-    { month: "Oct", value: 12000 },
-    { month: "Nov", value: 10000 },
-    { month: "Dec", value: 12500 },
-  ];
-    const handleLogout = () => {
-    localStorage.removeItem("token")
-    localStorage.removeItem("user")
-    navigate("/login")
-  }
+  useEffect(() => {
+    fetch("http://localhost:3000/api/all")
+      .then(res => res.json())
+      .then(data => setPayments(data))
+      .catch(() => setPayments([]));
+  }, []);
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
+
+  const analytics = getAnalytics(payments);
+
+  // Chart data
+  const barData = {
+    labels: Object.keys(analytics.byMethod),
+    datasets: [
+      {
+        label: "Total by Method",
+        data: Object.values(analytics.byMethod),
+        backgroundColor: ["#38bdf8", "#fbbf24", "#34d399", "#f87171", "#a78bfa"],
+      },
+    ],
+  };
+  const doughnutData = {
+    labels: ["Income", "Refund"],
+    datasets: [
+      {
+        data: [analytics.totalIncome, analytics.totalRefund],
+        backgroundColor: ["#34d399", "#f87171"],
+      },
+    ],
+  };
+
+
+
+  // Prepare tax by method for chart
+  const taxByMethod = {};
+  payments
+    .filter(p => p.payment_status === "Paid")
+    .forEach(p => {
+      const method = p.method || "Unknown";
+      const tax = p.tax ? Number(p.tax) : Number(p.amount) * 0.10;
+      taxByMethod[method] = (taxByMethod[method] || 0) + tax;
+    });
+
+  const taxBarData = {
+    labels: Object.keys(taxByMethod),
+    datasets: [
+      {
+        label: "Tax Collected by Method",
+        data: Object.values(taxByMethod),
+        backgroundColor: ["#60a5fa", "#fbbf24", "#34d399", "#f87171", "#a78bfa"],
+      },
+    ],
+  };
 
   return (
     <div className="min-h-screen flex bg-white">
@@ -43,19 +90,15 @@ function AdminDashboard() {
         </div>
         <nav className="flex-1 px-4 py-6 space-y-2">
           <button
-            className={`flex items-center w-full px-4 py-3 rounded-lg transition ${
-              activeMenu === "dashboard"
-                ? "bg-cyan-100 text-cyan-700 font-semibold"
-                : "hover:bg-gray-100 text-gray-700"
-            }`}
-            onClick={() => setActiveMenu("dashboard")}
+            className="flex items-center w-full px-4 py-3 rounded-lg bg-cyan-100 text-cyan-700 font-semibold"
+            onClick={() => navigate("/admin-dashboard")}
           >
             <Trophy className="mr-3 w-5 h-5" />
             Earnings Dashboard
           </button>
           <button
             className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700"
-              onClick={() => navigate("/admin-carwash-management")}
+            onClick={() => navigate("/admin-carwash-management")}
           >
             <Eye className="mr-3 w-5 h-5" />
             Carwash Shops
@@ -70,7 +113,7 @@ function AdminDashboard() {
           <hr className="my-4" />
           <button
             className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700"
-             onClick={() => navigate("/admin-application-requests")}
+            onClick={() => navigate("/admin-application-requests")}
           >
             <FileText className="mr-3 w-5 h-5" />
             Application Request
@@ -100,63 +143,79 @@ function AdminDashboard() {
           </div>
         </header>
 
-        {/* Dashboard Content */}
         <div className="p-10">
-          {/* Top Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-            <div className="col-span-2 flex flex-col md:flex-row gap-6">
-              <div className="flex-1 bg-white rounded-xl shadow p-6 flex flex-col items-center border border-gray-100">
-                <span className="text-green-600 font-semibold flex items-center mb-2">
-                  <svg width="20" height="20" fill="none" className="mr-1"><path d="M10 2v16M2 10h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
-                  Best Month
-                </span>
-                <span className="text-xl font-bold">{bestMonth.month}</span>
-                <span className="text-gray-500 text-sm">Net Profit: {bestMonth.profit}</span>
+          {/* Analytical Section */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            <div className="bg-white rounded-xl shadow p-6 border border-gray-100 flex flex-col items-center">
+              <h4 className="font-semibold mb-4">Income vs Refund</h4>
+              <div style={{ width: "100%", maxWidth: 180, height: 180 }}>
+                <Doughnut data={doughnutData} options={{ maintainAspectRatio: false }} />
               </div>
-              <div className="flex-1 bg-white rounded-xl shadow p-6 flex flex-col items-center border border-gray-100">
-                <span className="text-red-500 font-semibold flex items-center mb-2">
-                  <svg width="20" height="20" fill="none" className="mr-1"><path d="M2 10h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
-                  Lowest Month
-                </span>
-                <span className="text-xl font-bold">{lowestMonth.month}</span>
-                <span className="text-gray-500 text-sm">Net Profit: {lowestMonth.profit}</span>
+              <div className="mt-4 text-center">
+                <div className="text-green-600 font-bold">Income: ₱{analytics.totalIncome.toLocaleString()}</div>
+                <div className="text-red-600 font-bold">Refund: ₱{analytics.totalRefund.toLocaleString()}</div>
               </div>
             </div>
-            <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center border border-gray-100">
-              <span className="text-blue-600 font-semibold mb-2">Total Income</span>
-              <span className="text-2xl font-bold">${totalIncome.toLocaleString()}</span>
-              <span className="text-green-600 text-sm mt-1">↑ 5% this month</span>
+            <div className="bg-white rounded-xl shadow p-6 border border-gray-100 flex flex-col items-center">
+              <h4 className="font-semibold mb-4">Payments by Method</h4>
+              <div style={{ width: "100%", maxWidth: 220, height: 180 }}>
+                <Bar data={barData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }} />
+              </div>
             </div>
-            <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center border border-gray-100">
-              <span className="text-red-500 font-semibold mb-2">Expenses & Refunds</span>
-              <span className="text-2xl font-bold">${expenses.toLocaleString()}</span>
-              <span className="text-red-500 text-sm mt-1">↓ 2% this month</span>
-            </div>
-            <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center border border-gray-100">
-              <span className="text-green-600 font-semibold mb-2">Net Profit</span>
-              <span className="text-2xl font-bold">${netProfit.toLocaleString()}</span>
-              <span className="text-green-600 text-sm mt-1">↑ 4% this month</span>
+            <div className="bg-white rounded-xl shadow p-6 border border-gray-100 flex flex-col items-center">
+              <h4 className="font-semibold mb-4">Tax Collected by Method</h4>
+              <div style={{ width: "100%", maxWidth: 220, height: 180 }}>
+                <Bar
+                  data={taxBarData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        ticks: { callback: (value) => `₱${value.toLocaleString()}` },
+                      },
+                    },
+                  }}
+                />
+              </div>
             </div>
           </div>
-
-          {/* Net Income Trend */}
+          {/* Payments Table */}
           <div className="bg-white rounded-xl shadow p-8 border border-gray-100">
-            <h3 className="text-lg font-semibold mb-6">Net Income Trend</h3>
-            <div className="flex items-end h-48 gap-3">
-              {netIncomeTrend.map((item) => (
-                <div key={item.month} className="flex flex-col items-center w-8">
-                  <div
-                    className={`rounded-t-md ${item.value >= 10000 ? "bg-green-400" : item.value >= 8000 ? "bg-yellow-300" : "bg-red-400"}`}
-                    style={{
-                      height: `${(item.value / 13000) * 100}%`,
-                      minHeight: "12px",
-                      width: "100%",
-                      transition: "height 0.3s"
-                    }}
-                  ></div>
-                  <span className="text-xs mt-2 text-gray-500">{item.month}</span>
-                </div>
-              ))}
+            <h3 className="text-lg font-semibold mb-6">All Payments of Services</h3>
+            <div style={{ maxHeight: "340px", overflowY: "auto" }}>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-gray-500">
+                    <th className="py-2 text-left">Payment ID</th>
+                    <th className="py-2 text-left">Service</th>
+                    <th className="py-2 text-left">Amount</th>
+                    <th className="py-2 text-left">Date</th>
+                    <th className="py-2 text-left">Method</th>
+                    <th className="py-2 text-left">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {payments.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="text-center text-gray-400 py-4">No payments found.</td>
+                    </tr>
+                  ) : (
+                    payments.map((p) => (
+                      <tr key={p.payment_id} className="border-t">
+                        <td className="py-2">{p.payment_id}</td>
+                        <td className="py-2">{p.service_name}</td>
+                        <td className="py-2">₱{Number(p.amount).toLocaleString()}</td>
+                        <td className="py-2">{p.date ? p.date.slice(0, 16).replace("T", " ") : ""}</td>
+                        <td className="py-2">{p.method}</td>
+                        <td className="py-2">{p.payment_status || p.status}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

@@ -92,6 +92,14 @@ function CustomerList() {
           >
             <span className="text-lg">★</span> Customers & Employee
           </button>
+          {/* Status Update tab below Customers & Employee */}
+          <button
+            className="flex items-center gap-2 mb-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200 w-full text-left"
+            onClick={() => navigate("/status-update")}
+          >
+            <FaRegCheckSquare className="text-lg" />
+            <span>Status Update</span>
+          </button>
           <hr className="my-2 border-gray-300" />
           <button
             className="flex items-center gap-2 mb-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200 w-full text-left"
@@ -108,7 +116,7 @@ function CustomerList() {
             <FaTrophy className="text-lg" />
             <span>Earnings Dashboard</span>
           </div>
-          <hr className="my-4 border-gray-300" />
+          <hr className="my-4 border-gray-300" /> 
         </nav>
         <div className="mt-auto px-4 py-6">
           <button className="flex items-center gap-2 text-gray-700 hover:text-red-500 px-2 py-1 rounded hover:bg-gray-100 cursor-pointer transition-colors duration-200"
