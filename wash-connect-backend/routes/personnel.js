@@ -14,5 +14,6 @@ router.post('/personnel/assign-to-service', personnelController.assignToService)
 
 // NEW: list personnel assigned to a specific service
 router.get('/personnel/by-service/:serviceId', personnelController.getPersonnelByService);
+router.get('/personnel/:personnel_id/availability', personnelController.getPersonnelAvailability);
 
 module.exports = router;

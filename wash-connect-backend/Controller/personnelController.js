@@ -169,3 +169,21 @@ exports.uploadAvatar = [
     }
   },
 ];
+
+exports.getPersonnelAvailability = async (req, res) => {
+  const { personnel_id } = req.params;
+  try {
+    const [rows] = await pool.query(
+      `SELECT day_available, time_available, time_availability
+       FROM personnel
+       WHERE personnelId = ?`,
+      [personnel_id]
+    );
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Personnel not found' });
+    }
+    res.json(rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch personnel availability', details: error.message });
+  }
+};

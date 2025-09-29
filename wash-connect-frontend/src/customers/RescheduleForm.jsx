@@ -1,6 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
+import { Calendar } from "lucide-react"; // If you want to use the same icon
+
+// Helper to get day abbreviation from date string
+function getDayOfWeek(dateStr) {
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const d = new Date(dateStr);
+  return days[d.getDay()];
+}
+
+// Helper to parse time (e.g., "8:00 AM" to "08:00")
+function parseTime(str) {
+  if (!str) return "";
+  let [time, period] = str.split(" ");
+  let [hour, minute] = time.split(":");
+  hour = Number(hour);
+  if (period === "PM" && hour < 12) hour += 12;
+  if (period === "AM" && hour === 12) hour = 0;
+  return `${hour.toString().padStart(2, "0")}:${minute}`;
+}
 
 export default function RescheduleForm() {
   const navigate = useNavigate();
@@ -8,7 +27,7 @@ export default function RescheduleForm() {
   const appointment_id = location.state?.appointment_id;
   const personnel_id = location.state?.personnel_id; // Pass this from previous page
 
-  const [availableSlots, setAvailableSlots] = useState([]);
+  const [available, setAvailable] = useState(null);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,22 +38,32 @@ export default function RescheduleForm() {
       try {
         const res = await fetch(`http://localhost:3000/api/personnel/${personnel_id}/availability`);
         const data = await res.json();
-        setAvailableSlots(data);
+        setAvailable(data); // data is an object, not array
       } catch {
-        setAvailableSlots([]);
+        setAvailable(null);
       }
     }
     fetchAvailability();
   }, [personnel_id]);
 
-  // Get unique available dates
-  const availableDates = [...new Set(availableSlots.map(slot => slot.available_date))];
-  // Get times for selected date
-  const availableTimes = availableSlots.filter(slot => slot.available_date === date).map(slot => slot.available_time);
-
   const handleReschedule = async (e) => {
     e.preventDefault();
     setLoading(true);
+    const chosenDay = getDayOfWeek(date); // e.g. "Mon"
+    const validDay = availableDays?.includes(chosenDay);
+
+    const validTime =
+      personnelMinTime &&
+      personnelMaxTime &&
+      time >= personnelMinTime &&
+      time <= personnelMaxTime;
+
+    if (!validDay || !validTime) {
+      toast.error("Selected date/time is not available for this carwash boy.");
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch(`http://localhost:3000/api/bookings/reschedule/${appointment_id}`, {
         method: "PATCH",
@@ -53,6 +82,15 @@ export default function RescheduleForm() {
     setLoading(false);
   };
 
+  const availableDays = available?.day_available?.split(",").map(d => d.trim());
+  let personnelMinTime = "";
+  let personnelMaxTime = "";
+  if (available?.time_available) {
+    const [start, end] = available.time_available.split(" - ");
+    personnelMinTime = parseTime(start);
+    personnelMaxTime = parseTime(end);
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-cyan-100">
       <form
@@ -61,33 +99,68 @@ export default function RescheduleForm() {
       >
         <h2 className="text-2xl font-bold mb-6 text-blue-700 text-center">Reschedule Appointment</h2>
         <div className="mb-4">
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Available Dates</label>
-          <select
-            className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-200"
-            value={date}
-            onChange={e => { setDate(e.target.value); setTime(""); }}
-            required
-          >
-            <option value="">Select date</option>
-            {availableDates.map(d => (
-              <option key={d} value={d}>{d}</option>
-            ))}
-          </select>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">Schedule Date</label>
+          <div className="relative">
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="date"
+              className="pl-9 pr-3 py-2 rounded border border-gray-300 w-full focus:outline-none"
+              value={date}
+              onChange={e => setDate(e.target.value)}
+              required
+              min={new Date().toISOString().split("T")[0]}
+              disabled={!availableDays?.length}
+              onInput={e => {
+                const chosenDay = getDayOfWeek(e.target.value);
+                if (availableDays && !availableDays.includes(chosenDay)) {
+                  e.target.setCustomValidity(`Please select an available day: ${availableDays.join(", ")}`);
+                } else {
+                  e.target.setCustomValidity("");
+                }
+              }}
+            />
+            {!availableDays?.length && (
+              <div className="text-xs text-red-500 mt-1">
+                Please select a carwash boy to see available days.
+              </div>
+            )}
+            {available && available.day_available && (
+              <div className="mt-2 text-sm text-blue-700">
+                <strong>Available Day:</strong> {available.day_available}
+              </div>
+            )}
+          </div>
         </div>
         <div className="mb-6">
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Available Times</label>
-          <select
-            className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-200"
+          <label className="block text-sm font-semibold text-gray-700 mb-1">Schedule Time</label>
+          <input
+            type="time"
+            className="pl-3 pr-3 py-2 rounded border border-gray-300 w-full focus:outline-none"
             value={time}
             onChange={e => setTime(e.target.value)}
             required
-            disabled={!date}
-          >
-            <option value="">Select time</option>
-            {availableTimes.map(t => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
+            min={personnelMinTime}
+            max={personnelMaxTime}
+            disabled={!personnelMinTime || !personnelMaxTime}
+            onInput={e => {
+              const val = e.target.value;
+              if (personnelMinTime && personnelMaxTime && (val < personnelMinTime || val > personnelMaxTime)) {
+                e.target.setCustomValidity(`Please select a time between ${personnelMinTime} and ${personnelMaxTime}.`);
+              } else {
+                e.target.setCustomValidity("");
+              }
+            }}
+          />
+          {(!personnelMinTime || !personnelMaxTime) && (
+            <div className="text-xs text-red-500 mt-1">
+              Please select a carwash boy with available time.
+            </div>
+          )}
+          {available && available.time_available && (
+            <div className="mt-2 text-sm text-blue-700">
+              <strong>Available Time:</strong> {available.time_available}
+            </div>
+          )}
         </div>
         <button
           type="submit"

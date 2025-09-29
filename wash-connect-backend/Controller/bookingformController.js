@@ -290,6 +290,49 @@ exports.rescheduleBooking = async (req, res) => {
     }
 
     try {
+        // Get assigned personnel for this booking
+        const [bookingRows] = await pool.query(
+            "SELECT personnelId FROM bookings WHERE appointment_id = ?",
+            [appointmentId]
+        );
+        if (!bookingRows.length) {
+            return res.status(404).json({ error: "Booking not found." });
+        }
+        const personnelId = bookingRows[0].personnelId;
+
+        // Get personnel's available days and times
+        const [personnelRows] = await pool.query(
+            "SELECT day_available, time_available FROM personnel WHERE personnelId = ?",
+            [personnelId]
+        );
+        if (!personnelRows.length) {
+            return res.status(404).json({ error: "Personnel not found." });
+        }
+        const { day_available, time_available } = personnelRows[0];
+
+        // Validate day
+        const daysArr = day_available.split(",").map(d => d.trim());
+        const chosenDay = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][new Date(schedule_date).getDay()];
+        if (!daysArr.includes(chosenDay)) {
+            return res.status(400).json({ error: "Selected day is not available for this carwash boy." });
+        }
+
+        // Validate time
+        const [start, end] = time_available.split(" - ");
+        function parseTime(str) {
+            let [time, period] = str.split(" ");
+            let [hour, minute] = time.split(":");
+            hour = Number(hour);
+            if (period === "PM" && hour < 12) hour += 12;
+            if (period === "AM" && hour === 12) hour = 0;
+            return `${hour.toString().padStart(2, "0")}:${minute}`;
+        }
+        const minTime = parseTime(start);
+        const maxTime = parseTime(end);
+        if (schedule_time < minTime || schedule_time > maxTime) {
+            return res.status(400).json({ error: "Selected time is not available for this carwash boy." });
+        }
+
         // Update booking date and time
         const [result] = await pool.query(
             "UPDATE bookings SET schedule_date = ?, schedule_time = ? WHERE appointment_id = ?",

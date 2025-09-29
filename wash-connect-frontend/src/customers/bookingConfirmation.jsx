@@ -332,6 +332,17 @@ function BookingConfirmation() {
                     <User className="w-4 h-4 mr-2" />
                     {booking.customer_first_name} {booking.customer_last_name}
                   </div>
+                  {/* Display time booked and date */}
+                  <div className="flex items-center mb-1 text-gray-700">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    <span>
+                      <b>Schedule Date:</b>{" "}
+                      {booking.schedule_date
+                        ? booking.schedule_date.split("T")[0]
+                        : ""}
+                      &nbsp; <b>Time Booked:</b> {booking.schedule_time}
+                    </span>
+                  </div>
                   <button className="mt-2 px-3 py-1 border rounded bg-gray-100 hover:bg-gray-200 text-sm">
                     View Location
                   </button>
@@ -375,19 +386,26 @@ function BookingConfirmation() {
                   Carwashboy will arrive in <b>10 - 30 minutes</b>
                 </div>
                 <div className="flex gap-2 mt-3">
-                  <button
-                    className="flex-1 bg-blue-100 text-blue-700 px-3 py-2 rounded font-semibold hover:bg-blue-200 text-sm"
-                    onClick={() => navigate("/reschedule", { state: { appointment_id } })}
-                  >
-                    Reschedule
-                  </button>
-                  <button
-                    className="flex-1 bg-red-100 text-red-700 px-3 py-2 rounded font-semibold hover:bg-red-200 text-sm"
-                    onClick={handleCancelBooking}
-                    disabled={canceling || booking.status === "Declined"}
-                  >
-                    {canceling ? "Cancelling..." : booking.status === "Declined" ? "Booking Cancelled" : "Cancel Booking"}
-                  </button>
+                  {/** Define personnel_id from booking.personnelId */}
+                  {(() => {
+                    return (
+                      <>
+                        <button
+                          className="flex-1 bg-blue-100 text-blue-700 px-3 py-2 rounded font-semibold hover:bg-blue-200 text-sm"
+                          onClick={() => navigate("/reschedule", { state: { appointment_id, personnel_id: booking.personnelId } })}
+                        >
+                          Reschedule
+                        </button>
+                        <button
+                          className="flex-1 bg-red-100 text-red-700 px-3 py-2 rounded font-semibold hover:bg-red-200 text-sm"
+                          onClick={handleCancelBooking}
+                          disabled={canceling || booking.status === "Declined"}
+                        >
+                          {canceling ? "Cancelling..." : booking.status === "Declined" ? "Booking Cancelled" : "Cancel Booking"}
+                        </button>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
