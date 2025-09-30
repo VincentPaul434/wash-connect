@@ -9,16 +9,30 @@ function AdminCarwashManagement() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchShops();
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+    fetchShops(token);
+    // eslint-disable-next-line
   }, []);
 
-  // Fetch only approved carwash businesses
-  const fetchShops = async () => {
+  // Fetch only approved and banned carwash businesses
+  const fetchShops = async (token) => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:3000/api/admin/applications");
+      const res = await fetch("http://localhost:3000/api/admin/applications", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (res.status === 401) {
+        navigate("/login");
+        return;
+      }
       const data = await res.json();
-      setShops(data.filter((shop) => shop.status === "Approved"));
+      setShops(data.filter((shop) => shop.status === "Approved" || shop.status === "Banned"));
     } catch {
       setShops([]);
     }

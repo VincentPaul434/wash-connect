@@ -15,23 +15,46 @@ function CustomerList() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Token authentication
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/carwash-login");
+      return;
+    }
+
     // Fetch confirmed customers for this carwash branch
     const owner = JSON.parse(localStorage.getItem("carwashOwner"));
     if (!owner || !owner.id) return;
 
     // Get applicationId for this owner
-    fetch(`http://localhost:3000/api/carwash-applications/by-owner/${owner.id}`)
-      .then(res => res.json())
+    fetch(`http://localhost:3000/api/carwash-applications/by-owner/${owner.id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => {
+        if (res.status === 401) {
+          navigate("/carwash-login");
+          return null;
+        }
+        return res.json();
+      })
       .then(data => {
         if (data && data.applicationId) {
           // Fetch only confirmed bookings for this applicationId
-          fetch(`http://localhost:3000/api/bookings/confirmed/${data.applicationId}`)
-            .then(res => res.json())
+          fetch(`http://localhost:3000/api/bookings/confirmed/${data.applicationId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+            .then(res => {
+              if (res.status === 401) {
+                navigate("/carwash-login");
+                return [];
+              }
+              return res.json();
+            })
             .then(setCustomers)
             .catch(() => setCustomers([]));
         }
       });
-  }, []);
+  }, [navigate]);
 
   // Filter and sort customers
   const filtered = customers
@@ -119,7 +142,8 @@ function CustomerList() {
           <hr className="my-4 border-gray-300" /> 
         </nav>
         <div className="mt-auto px-4 py-6">
-          <button className="flex items-center gap-2 text-gray-700 hover:text-red-500 px-2 py-1 rounded hover:bg-gray-100 cursor-pointer transition-colors duration-200"
+          <button
+            className="flex items-center gap-2 text-gray-700 hover:text-red-500 px-2 py-1 rounded hover:bg-gray-100 cursor-pointer transition-colors duration-200"
             onClick={handleLogout}
           >
             <FaRegFolderOpen className="text-lg" /> Logout

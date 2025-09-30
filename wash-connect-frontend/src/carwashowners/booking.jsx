@@ -89,9 +89,13 @@ function Sidebar() {
       <div className="mt-auto px-4 py-6">
         <button
           className="flex items-center gap-2 text-gray-700 hover:text-red-500 px-2 py-1 rounded hover:bg-gray-100 cursor-pointer transition-colors duration-200"
-          onClick={() => navigate("/carwash-login")}
+          onClick={() => {
+            localStorage.removeItem("token");
+            localStorage.removeItem("carwashOwner");
+            navigate("/carwash-login");
+          }}
         >
-          <span className="text-lg">⏻</span> Logout
+          Logout
         </button>
       </div>
     </aside>
@@ -101,36 +105,68 @@ function Sidebar() {
 function Bookings() {
   const [activeTab, setActiveTab] = useState("overall");
   const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [, setApplicationId] = useState(null);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const navigate = useNavigate();
 
-  // Fetch applicationId and bookings (same logic as CustomerList)
   useEffect(() => {
     const owner = JSON.parse(localStorage.getItem("carwashOwner"));
-    if (!owner || !owner.id) {
-      setLoading(false);
+    const token = localStorage.getItem("token");
+    if (!owner || !owner.id || !token) {
+      navigate("/carwash-login");
       return;
     }
 
-    // Get applicationId for this owner
-    fetch(`http://localhost:3000/api/carwash-applications/by-owner/${owner.id}`)
-      .then(res => res.json())
+    fetch(`http://localhost:3000/api/carwash-applications/by-owner/${owner.id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => {
+        if (res.status === 401) {
+          navigate("/carwash-login");
+          return null;
+        }
+        return res.json();
+      })
       .then(data => {
         if (data && data.applicationId) {
           setApplicationId(data.applicationId);
           // Fetch ALL bookings for this applicationId
-          fetch(`http://localhost:3000/api/bookings/application/${data.applicationId}`)
-            .then(res => res.ok ? res.json() : [])
+          fetch(`http://localhost:3000/api/bookings/application/${data.applicationId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+            .then(res => {
+              if (res.status === 401) {
+                navigate("/carwash-login");
+                return [];
+              }
+              return res.ok ? res.json() : [];
+            })
             .then(data => setBookings(Array.isArray(data) ? data : []))
-            .catch(() => setBookings([]))
-            .finally(() => setLoading(false));
-        } else {
-          setLoading(false);
+            .catch(() => setBookings([]));
         }
       })
-      .catch(() => setLoading(false));
-  }, []);
+      .catch(() => setBookings([]));
+  }, [navigate]);
+
+  // Accept booking
+  const handleAccept = async (id) => {
+    const token = localStorage.getItem("token");
+    await fetch(`http://localhost:3000/api/bookings/confirm/${id}`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    setBookings(prev => prev.map(b => b.appointment_id === id ? { ...b, status: "Confirmed" } : b));
+  };
+
+  // Decline booking
+  const handleDecline = async (id) => {
+    const token = localStorage.getItem("token");
+    await fetch(`http://localhost:3000/api/bookings/decline/${id}`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    setBookings(prev => prev.filter(b => b.appointment_id !== id));
+  };
 
   // Filter bookings by tab (add completed logic)
   const filteredBookings = bookings.filter(b => {
@@ -141,18 +177,6 @@ function Bookings() {
     if (activeTab === "completed") return b.status === "Completed"; // <-- Completed filter
     return true;
   });
-
-  // Accept booking
-  const handleAccept = async (id) => {
-    await fetch(`http://localhost:3000/api/bookings/confirm/${id}`, { method: "PATCH" });
-    setBookings(prev => prev.map(b => b.appointment_id === id ? { ...b, status: "Confirmed" } : b));
-  };
-
-  // Decline booking
-  const handleDecline = async (id) => {
-    await fetch(`http://localhost:3000/api/bookings/decline/${id}`, { method: "PATCH" });
-    setBookings(prev => prev.filter(b => b.appointment_id !== id));
-  };
 
   // Get bookings for a customer that match the current tab (add completed logic)
   const getBookingsForCustomer = (customerId) =>
@@ -185,9 +209,7 @@ function Bookings() {
           ))}
         </div>
         <div className="flex-1 overflow-y-auto p-8">
-          {loading ? (
-            <div className="text-center text-gray-400">Loading...</div>
-          ) : filteredBookings.length === 0 ? (
+          {filteredBookings.length === 0 ? (
             <div className="text-center text-gray-400">No bookings found.</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

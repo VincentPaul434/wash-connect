@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FileText, Eye, Check, X, MapPin, Filter, Trophy, Users, Inbox, LogOut } from "lucide-react";
-import { Navigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 
 function AdminApplicationRequests() {
   const [applications, setApplications] = useState([]);
@@ -8,6 +8,9 @@ function AdminApplicationRequests() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedApp, setSelectedApp] = useState(null);
+  const navigate = useNavigate();
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -20,8 +23,21 @@ function AdminApplicationRequests() {
 
   const fetchApplications = async () => {
     setLoading(true);
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
     try {
-      const res = await fetch("http://localhost:3000/api/admin/applications");
+      const res = await fetch("http://localhost:3000/api/admin/applications", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (res.status === 401) {
+        navigate("/login");
+        return;
+      }
       const data = await res.json();
       setApplications(data);
     } catch {
@@ -32,8 +48,12 @@ function AdminApplicationRequests() {
 
   const handleApprove = async (id) => {
     setActionLoading(id + "-approve");
+    const token = localStorage.getItem("token");
     await fetch(`http://localhost:3000/api/admin/applications/${id}/approve`, {
       method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
     await fetchApplications();
     setActionLoading(null);
@@ -41,8 +61,12 @@ function AdminApplicationRequests() {
 
   const handleDecline = async (id) => {
     setActionLoading(id + "-decline");
+    const token = localStorage.getItem("token");
     await fetch(`http://localhost:3000/api/admin/applications/${id}/decline`, {
       method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
     await fetchApplications();
     setActionLoading(null);
@@ -226,7 +250,7 @@ function AdminApplicationRequests() {
                           )}
                           <button
                             className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1"
-                            onClick={() => window.open(`/admin/application/${app.applicationId}`, "_blank")}
+                            onClick={() => { setSelectedApp(app); setModalOpen(true); }}
                           >
                             <Eye className="w-4 h-4" /> View
                           </button>
@@ -265,6 +289,61 @@ function AdminApplicationRequests() {
             </div>
           </div>
         </div>
+
+        {/* Modal for Application Details */}
+        {modalOpen && selectedApp && (
+          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md relative">
+              <button
+                className="absolute top-2 right-2 text-gray-500 hover:text-red-500 text-xl"
+                onClick={() => setModalOpen(false)}
+              >
+                &times;
+              </button>
+              <h2 className="text-xl font-bold mb-4">Application Details</h2>
+              <div className="mb-2"><strong>Owner:</strong> {selectedApp.owner_first_name} {selectedApp.owner_last_name}</div>
+              <div className="mb-2"><strong>Email:</strong> {selectedApp.owner_email}</div>
+              <div className="mb-2"><strong>Carwash Name:</strong> {selectedApp.carwashName}</div>
+              <div className="mb-2"><strong>Location:</strong> {selectedApp.location}</div>
+              <div className="mb-2"><strong>Status:</strong> {selectedApp.status}</div>
+              <div className="mb-2">
+                <strong>Logo:</strong><br />
+                {selectedApp.logo ? (
+                  <img
+                    src={`http://localhost:3000/${selectedApp.logo}`}
+                    alt="Logo"
+                    style={{ maxWidth: "120px", maxHeight: "120px", marginTop: "8px", borderRadius: "8px" }}
+                  />
+                ) : (
+                  <span className="text-gray-400">No logo uploaded</span>
+                )}
+              </div>
+              <div className="mb-2">
+                <strong>Requirements:</strong><br />
+                {selectedApp.requirements ? (
+                  <a
+                    href={`http://localhost:3000/${selectedApp.requirements}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-cyan-600 underline"
+                  >
+                    View requirements file
+                  </a>
+                ) : (
+                  <span className="text-gray-400">No requirements uploaded</span>
+                )}
+              </div>
+              <div className="mt-4 flex justify-end">
+                <button
+                  className="px-4 py-2 rounded bg-cyan-500 text-white"
+                  onClick={() => setModalOpen(false)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

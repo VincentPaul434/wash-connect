@@ -10,15 +10,31 @@ export default function BookingHistory() {
 
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const owner = JSON.parse(localStorage.getItem("carwashOwner"));
-        if (!owner || !owner.id) return;
+      const token = localStorage.getItem("token");
+      const owner = JSON.parse(localStorage.getItem("carwashOwner"));
+      if (!owner || !owner.id || !token) {
+        navigate("/carwash-login");
+        return;
+      }
 
-        const appRes = await fetch(`http://localhost:3000/api/carwash-applications/by-owner/${owner.id}`);
+      try {
+        const appRes = await fetch(`http://localhost:3000/api/carwash-applications/by-owner/${owner.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (appRes.status === 401) {
+          navigate("/carwash-login");
+          return;
+        }
         const appData = await appRes.json();
 
         if (appData && appData.applicationId) {
-          const bookingsRes = await fetch(`http://localhost:3000/api/bookings/by-application/${appData.applicationId}`);
+          const bookingsRes = await fetch(`http://localhost:3000/api/bookings/by-application/${appData.applicationId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (bookingsRes.status === 401) {
+            navigate("/carwash-login");
+            return;
+          }
           const bookingsData = await bookingsRes.json();
           const rows = Array.isArray(bookingsData)
             ? bookingsData.slice().sort((a, b) => new Date(b.schedule_date) - new Date(a.schedule_date))
@@ -32,7 +48,7 @@ export default function BookingHistory() {
       }
     };
     fetchData();
-  }, []);
+  }, [navigate]);
 
   // Derive page size so total pages <= 4
   const { totalPages, pageItems } = useMemo(() => {
@@ -90,7 +106,16 @@ export default function BookingHistory() {
           <hr className="my-4 border-gray-300" />
         </nav>
         <div className="mt-auto px-4 py-6">
-          <button className="flex items-center gap-2 text-gray-700 hover:text-red-500 px-2 py-1 rounded hover:bg-gray-100 cursor-pointer transition-colors duration-200" onClick={() => navigate("/carwash-login")}>Logout</button>
+          <button
+            className="flex items-center gap-2 text-gray-700 hover:text-red-500 px-2 py-1 rounded hover:bg-gray-100 cursor-pointer transition-colors duration-200"
+            onClick={() => {
+              localStorage.removeItem("token");
+              localStorage.removeItem("carwashOwner");
+              navigate("/carwash-login");
+            }}
+          >
+            Logout
+          </button>
         </div>
       </aside>
 

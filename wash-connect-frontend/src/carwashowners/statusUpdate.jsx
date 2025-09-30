@@ -25,12 +25,16 @@ export default function StatusUpdate() {
         const owner = JSON.parse(localStorage.getItem("carwashOwner") || "{}");
         const token = localStorage.getItem("token");
         if (!owner?.id || !token) {
-          setError("Not authenticated.");
+          navigate("/carwash-login");
           return;
         }
         const appRes = await fetch(`http://localhost:3000/api/carwash-applications/by-owner/${owner.id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        if (appRes.status === 401) {
+          navigate("/carwash-login");
+          return;
+        }
         const appData = await appRes.json();
         if (!appData?.applicationId) {
           setError("No carwash application found.");
@@ -39,6 +43,10 @@ export default function StatusUpdate() {
         const bookingsRes = await fetch(`http://localhost:3000/api/bookings/by-application/${appData.applicationId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        if (bookingsRes.status === 401) {
+          navigate("/carwash-login");
+          return;
+        }
         const bookingsData = await bookingsRes.json();
         if (!Array.isArray(bookingsData) || bookingsData.length === 0) {
           setError("No bookings found for this carwash.");
@@ -58,7 +66,7 @@ export default function StatusUpdate() {
       }
     }
     fetchBookings();
-  }, [paramAppointmentId]);
+  }, [paramAppointmentId, navigate]);
 
   // Fetch status for selected booking
   useEffect(() => {
@@ -67,10 +75,18 @@ export default function StatusUpdate() {
       setNewStatus("");
       if (!selectedId) return;
       const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/carwash-login");
+        return;
+      }
       try {
         const res = await fetch(`http://localhost:3000/api/bookings/${selectedId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        if (res.status === 401) {
+          navigate("/carwash-login");
+          return;
+        }
         if (res.ok) {
           const data = await res.json();
           setOldStatus(data.status || "");
@@ -85,7 +101,7 @@ export default function StatusUpdate() {
       }
     }
     fetchStatus();
-  }, [selectedId]);
+  }, [selectedId, navigate]);
 
   const handleUpdate = async () => {
     if (!selectedId) {
@@ -209,8 +225,13 @@ export default function StatusUpdate() {
           <hr className="my-4 border-gray-300" />
         </nav>
         <div className="mt-auto px-4 py-6">
-          <button className="flex items-center gap-2 text-gray-700 hover:text-red-500 px-2 py-1 rounded hover:bg-gray-100 cursor-pointer transition-colors duration-200"
-            onClick={() => navigate("/carwash-login")}
+          <button
+            className="flex items-center gap-2 text-gray-700 hover:text-red-500 px-2 py-1 rounded hover:bg-gray-100 cursor-pointer transition-colors duration-200"
+            onClick={() => {
+              localStorage.removeItem("token");
+              localStorage.removeItem("carwashOwner");
+              navigate("/carwash-login");
+            }}
           >
             <FaRegFolderOpen className="text-lg" /> Logout
           </button>

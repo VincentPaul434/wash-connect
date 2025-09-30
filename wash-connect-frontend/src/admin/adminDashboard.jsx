@@ -21,15 +21,42 @@ function AdminDashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("http://localhost:3000/api/all")
-      .then(res => res.json())
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    fetch("http://localhost:3000/api/all", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(res => {
+        if (res.status === 401) {
+          navigate("/login");
+          return [];
+        }
+        return res.json();
+      })
       .then(data => setPayments(data))
       .catch(() => setPayments([]));
 
-    fetch("http://localhost:3000/api/refunds")
-      .then(res => res.json())
+    fetch("http://localhost:3000/api/refunds", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(res => {
+        if (res.status === 401) {
+          navigate("/login");
+          return [];
+        }
+        return res.json();
+      })
       .then(data => setRefunds(data))
       .catch(() => setRefunds([]));
+    // eslint-disable-next-line
   }, []);
 
   const handleLogout = () => {

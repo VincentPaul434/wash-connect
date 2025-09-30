@@ -20,12 +20,23 @@ export default function CarwashDashboard() {
 
     useEffect(() => {
         const fetchData = async () => {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                navigate("/carwash-login");
+                return;
+            }
             try {
                 const owner = JSON.parse(localStorage.getItem("carwashOwner"));
                 if (!owner || !owner.id) return;
 
                 // Fetch owner credentials
-                const ownerRes = await fetch(`http://localhost:3000/api/carwash-owners/${owner.id}`);
+                const ownerRes = await fetch(`http://localhost:3000/api/carwash-owners/${owner.id}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (ownerRes.status === 401) {
+                    navigate("/carwash-login");
+                    return;
+                }
                 const ownerDataRaw = await ownerRes.json();
                 const ownerData = {
                     ...ownerDataRaw,
@@ -35,23 +46,39 @@ export default function CarwashDashboard() {
                 setOwnerData(ownerData);
 
                 // Fetch carwash application data
-                const appRes = await fetch(`http://localhost:3000/api/carwash-applications/by-owner/${owner.id}`);
+                const appRes = await fetch(`http://localhost:3000/api/carwash-applications/by-owner/${owner.id}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (appRes.status === 401) {
+                    navigate("/carwash-login");
+                    return;
+                }
                 const appData = await appRes.json();
                 setCarwashData(appData);
 
                 // Fetch bookings if application exists
                 if (appData && appData.applicationId) {
-                    const bookingsRes = await fetch(`http://localhost:3000/api/bookings/by-application/${appData.applicationId}`);
+                    const bookingsRes = await fetch(`http://localhost:3000/api/bookings/by-application/${appData.applicationId}`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    if (bookingsRes.status === 401) {
+                        navigate("/carwash-login");
+                        return;
+                    }
                     const bookingsData = await bookingsRes.json();
                     setRecentBookings(bookingsData);
 
                     // Fetch services
-                    const svcRes = await fetch(`http://localhost:3000/api/services/by-application/${appData.applicationId}`);
+                    const svcRes = await fetch(`http://localhost:3000/api/services/by-application/${appData.applicationId}`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
                     const svcData = await svcRes.json();
                     setServices(Array.isArray(svcData) ? svcData : []);
 
                     // Fetch reviews for this carwash application
-                    const reviewsRes = await fetch(`http://localhost:3000/api/reviews/by-application/${appData.applicationId}`);
+                    const reviewsRes = await fetch(`http://localhost:3000/api/reviews/by-application/${appData.applicationId}`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
                     const reviewsData = await reviewsRes.json();
                     setReviews(Array.isArray(reviewsData) ? reviewsData : []);
                 }

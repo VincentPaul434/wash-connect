@@ -37,6 +37,13 @@ function AdminUserManagement() {
   const reportedCount = customers.filter((c) => c.status === "Reported").length;
   const bannedCount = customers.filter((c) => c.status === "Banned").length;
 
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const pageSize = 5;
+
+  // Paginated customers
+  const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
+
   return (
     <div className="min-h-screen flex bg-white">
       {/* Sidebar */}
@@ -149,76 +156,98 @@ function AdminUserManagement() {
           {loading ? (
             <div className="text-center text-gray-400 py-20">Loading...</div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filtered.length === 0 ? (
-                <div className="col-span-full text-center text-gray-400 py-20">No customers found.</div>
-              ) : (
-                filtered.map((c) => (
-                  <div key={c.user_id} className="bg-white rounded-xl shadow border border-gray-200 p-6 flex flex-col">
-                    <div className="flex items-center mb-2">
-                      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-2xl font-bold text-gray-700 mr-3">
-                        {c.first_name[0]}
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {paginated.length === 0 ? (
+                  <div className="col-span-full text-center text-gray-400 py-20">No customers found.</div>
+                ) : (
+                  paginated.map((c) => (
+                    <div key={c.user_id} className="bg-white rounded-xl shadow border border-gray-200 p-6 flex flex-col">
+                      <div className="flex items-center mb-2">
+                        <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-2xl font-bold text-gray-700 mr-3">
+                          {c.first_name[0]}
+                        </div>
+                        <div>
+                          <div className="font-semibold text-lg">{c.first_name} {c.last_name}</div>
+                          <div className="text-xs text-gray-500">Customer</div>
+                        </div>
+                        <div className="ml-auto">
+                          {c.status === "Active" && (
+                            <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">Active</span>
+                          )}
+                          {c.status === "Reported" && (
+                            <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-semibold">Reported</span>
+                          )}
+                          {c.status === "Banned" && (
+                            <span className="bg-red-200 text-red-700 px-3 py-1 rounded-full text-xs font-semibold">Banned</span>
+                          )}
+                        </div>
                       </div>
-                      <div>
-                        <div className="font-semibold text-lg">{c.first_name} {c.last_name}</div>
-                        <div className="text-xs text-gray-500">Customer</div>
+                      <div className="mb-2">
+                        <span className="text-xs text-gray-500 flex items-center">
+                          <MapPin className="w-4 h-4 mr-1" />
+                          {c.address}
+                        </span>
                       </div>
-                      <div className="ml-auto">
-                        {c.status === "Active" && (
-                          <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">Active</span>
-                        )}
-                        {c.status === "Reported" && (
-                          <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-semibold">Reported</span>
-                        )}
-                        {c.status === "Banned" && (
-                          <span className="bg-red-200 text-red-700 px-3 py-1 rounded-full text-xs font-semibold">Banned</span>
-                        )}
+                      <div className="mb-2">
+                        <span className="text-xs text-gray-500">Email</span>
+                        <input
+                          type="text"
+                          className="w-full mt-1 px-2 py-1 rounded border border-gray-200 bg-gray-50 text-gray-700 text-xs"
+                          value={c.email}
+                          readOnly
+                        />
                       </div>
-                    </div>
-                    <div className="mb-2">
-                      <span className="text-xs text-gray-500 flex items-center">
-                        <MapPin className="w-4 h-4 mr-1" />
-                        {c.address}
-                      </span>
-                    </div>
-                    <div className="mb-2">
-                      <span className="text-xs text-gray-500">Email</span>
-                      <input
-                        type="text"
-                        className="w-full mt-1 px-2 py-1 rounded border border-gray-200 bg-gray-50 text-gray-700 text-xs"
-                        value={c.email}
-                        readOnly
-                      />
-                    </div>
-                    <button
-                      className={`bg-red-500 hover:bg-red-600 text-white rounded-full py-2 mt-2 font-semibold transition ${c.status === "Banned" ? "opacity-50 cursor-not-allowed" : ""}`}
-                      onClick={async () => {
-                        await fetch(`http://localhost:3000/api/admin/customers/ban/${c.user_id}`, {
-                          method: "PATCH",
-                        });
-                        fetchCustomers(); // Refresh list after banning
-                      }}
-                      disabled={c.status === "Banned"}
-                    >
-                      Ban
-                    </button>
-                    {c.status === "Banned" && (
                       <button
-                        className="bg-green-500 hover:bg-green-600 text-white rounded-full py-2 mt-2 font-semibold transition"
+                        className={`bg-red-500 hover:bg-red-600 text-white rounded-full py-2 mt-2 font-semibold transition ${c.status === "Banned" ? "opacity-50 cursor-not-allowed" : ""}`}
                         onClick={async () => {
-                          await fetch(`http://localhost:3000/api/admin/customers/unban/${c.user_id}`, {
+                          await fetch(`http://localhost:3000/api/admin/customers/ban/${c.user_id}`, {
                             method: "PATCH",
                           });
-                          fetchCustomers(); // Refresh list after unbanning
+                          fetchCustomers(); // Refresh list after banning
                         }}
+                        disabled={c.status === "Banned"}
                       >
-                        Unban
+                        Ban
                       </button>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
+                      {c.status === "Banned" && (
+                        <button
+                          className="bg-green-500 hover:bg-green-600 text-white rounded-full py-2 mt-2 font-semibold transition"
+                          onClick={async () => {
+                            await fetch(`http://localhost:3000/api/admin/customers/unban/${c.user_id}`, {
+                              method: "PATCH",
+                            });
+                            fetchCustomers(); // Refresh list after unbanning
+                          }}
+                        >
+                          Unban
+                        </button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+              {/* Pagination Controls */}
+              <div className="flex justify-center mt-6">
+                <button
+                  className="px-4 py-2 mx-2 rounded bg-cyan-100 text-cyan-700 font-semibold disabled:opacity-50"
+                  onClick={() => setPage(page - 1)}
+                  disabled={page === 1}
+                >
+                  Previous
+                </button>
+                <span className="px-4 py-2 text-gray-700 font-semibold">
+                  Page {page} of {Math.ceil(filtered.length / pageSize)}
+                </span>
+                <button
+                  className="px-4 py-2 mx-2 rounded bg-cyan-100 text-cyan-700 font-semibold disabled:opacity-50"
+                  onClick={() => setPage(page + 1)}
+                  disabled={page * pageSize >= filtered.length}
+                >
+                  Next
+                </button>
+              </div>
+            </>
           )}
         </div>
       </main>
