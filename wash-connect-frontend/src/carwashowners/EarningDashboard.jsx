@@ -13,6 +13,7 @@ export default function EarningDashboard() {
   const [payments, setPayments] = useState([]);
   const [apiSummary, setApiSummary] = useState({ total_amount: 0, total_paid: 0, total_refunded: 0 });
   const [services, setServices] = useState([]);
+  const [refunds, setRefunds] = useState([]);
 
   // Load owner -> application -> payments
   useEffect(() => {
@@ -65,6 +66,17 @@ export default function EarningDashboard() {
     };
     load();
   }, [navigate]);
+
+  // Fetch refunds for this carwash owner
+  useEffect(() => {
+    const owner = JSON.parse(localStorage.getItem("carwashOwner") || "{}");
+    const applicationId = owner.applicationId;
+    if (!applicationId) return;
+    fetch(`http://localhost:3000/api/refunds?ownerId=${applicationId}`)
+      .then((res) => res.json())
+      .then((data) => setRefunds(Array.isArray(data) ? data : []))
+      .catch(() => setRefunds([]));
+  }, []);
 
   const fmtPHP = (n) =>
     `₱${Number(n || 0).toLocaleString("en-PH", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
@@ -167,33 +179,10 @@ export default function EarningDashboard() {
 
   // Prepare analytics data
   const totalIncome = details.filter((d) => d.type === "Income").reduce((sum, d) => sum + d.amount, 0);
-  const totalRefund = details.filter((d) => d.type === "Refund").reduce((sum, d) => sum + d.amount, 0);
   const byStatus = details.reduce((acc, d) => {
     acc[d.status] = (acc[d.status] || 0) + d.amount;
     return acc;
   }, {});
-
-  // Chart data
-  const doughnutData = {
-    labels: ["Income", "Refund"],
-    datasets: [
-      {
-        data: [totalIncome, totalRefund],
-        backgroundColor: ["#34d399", "#f87171"],
-      },
-    ],
-  };
-
-  const barData = {
-    labels: Object.keys(byStatus),
-    datasets: [
-      {
-        label: "Amount by Status",
-        data: Object.values(byStatus),
-        backgroundColor: ["#38bdf8", "#fbbf24", "#34d399", "#f87171", "#a78bfa"],
-      },
-    ],
-  };
 
   // Prepare Net Income Trend chart data (Bar chart for last 6 months)
   const trendLabels = trend.map((month) => month.short);
@@ -225,6 +214,32 @@ export default function EarningDashboard() {
       )
     ).length;
   }, [services, payments]);
+
+  const totalRefundedAmount = refunds
+    .filter(r => r.status === "Approved")
+    .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+
+  // Chart data
+  const doughnutData = {
+    labels: ["Income", "Refund"],
+    datasets: [
+      {
+        data: [totalIncome, totalRefundedAmount], // <-- use totalRefundedAmount here
+        backgroundColor: ["#34d399", "#f87171"],
+      },
+    ],
+  };
+
+  const barData = {
+    labels: Object.keys(byStatus),
+    datasets: [
+      {
+        label: "Amount by Status",
+        data: Object.values(byStatus),
+        backgroundColor: ["#38bdf8", "#fbbf24", "#34d399", "#f87171", "#a78bfa"],
+      },
+    ],
+  };
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
@@ -320,8 +335,10 @@ export default function EarningDashboard() {
                 </div>
                 <div className="bg-white rounded-xl shadow p-4 flex flex-col items-center">
                   <span className="text-red-600 font-semibold">Refunds</span>
-                  <span className="text-lg">{fmtPHP(apiSummary.total_refunded)}</span>
-                  <span className="text-xs text-red-600">{summary.expenseChange}</span>
+                  <span className="text-lg">₱{Number(totalRefundedAmount || 0).toLocaleString("en-PH", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
+                  <span className="text-xs text-red-600">
+                    {totalRefundedAmount > 0 ? `↑ ₱${Number(totalRefundedAmount).toLocaleString("en-PH", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} refunded` : "—"}
+                  </span>
                 </div>
                 <div className="bg-white rounded-xl shadow p-4 flex flex-col items-center">
                   <span className="text-green-600 font-semibold">Net Profit</span>
@@ -442,7 +459,7 @@ export default function EarningDashboard() {
                 <div className="mt-2 text-center text-xs">
                   <span className="text-green-600 font-bold">Income: {fmtPHP(totalIncome)}</span>
                   <br />
-                  <span className="text-red-600 font-bold">Refund: {fmtPHP(totalRefund)}</span>
+                  <span className="text-red-600 font-bold">Refund: {fmtPHP(totalRefundedAmount)}</span>
                 </div>
               </div>
               <div className="bg-white rounded-xl shadow p-4 border border-gray-100 flex flex-col items-center">
@@ -464,6 +481,48 @@ export default function EarningDashboard() {
                   />
                 </div>
               </div>
+            </div>
+
+            {/* Refund Requests Section */}
+            <div className="bg-white rounded-xl shadow p-6 mt-4">
+              <h4 className="font-semibold mb-4">Refund Requests</h4>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-gray-500">
+                    <th className="py-2 text-left">Customer</th>
+                    <th className="py-2 text-left">Amount</th>
+                    <th className="py-2 text-left">Reason</th>
+                    <th className="py-2 text-left">Status</th>
+                    <th className="py-2 text-left">Requested At</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {refunds.map((r) => (
+                    <tr key={r.id} className="border-t">
+                      <td className="py-2">{r.customer}</td>
+                      <td className="py-2">₱{Number(r.amount || 0).toFixed(2)}</td>
+                      <td className="py-2">{r.reason}</td>
+                      <td className="py-2">
+                        <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                          r.status === "Approved"
+                            ? "bg-green-200 text-green-800"
+                            : r.status === "Rejected"
+                            ? "bg-red-200 text-red-800"
+                            : "bg-yellow-200 text-yellow-800"
+                        }`}>
+                          {r.status}
+                        </span>
+                      </td>
+                      <td className="py-2">{r.requestedAt ? r.requestedAt.slice(0, 19).replace("T", " ") : ""}</td>
+                    </tr>
+                  ))}
+                  {refunds.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="text-center text-gray-400 py-4">No refund requests.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </section>
         </div>

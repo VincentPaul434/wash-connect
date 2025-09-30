@@ -22,6 +22,7 @@ const feedbackRoutes = require('./routes/feedback');
 const paymentRoutes = require('./routes/payment');
 const serviceRoutes = require('./routes/service');
 const bookingRoutes = require('./routes/booking');
+const refundRoutes = require('./routes/refund'); // Add this line
 
 
 const app = express();
@@ -47,6 +48,7 @@ app.use('/api', paymentRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/services', serviceRoutes);
 app.use('/api', bookingRoutes);
+app.use('/api/refunds', refundRoutes); // Add this line
 
 
 //admin

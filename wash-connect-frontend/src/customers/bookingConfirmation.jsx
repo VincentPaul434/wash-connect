@@ -172,10 +172,38 @@ function BookingConfirmation() {
   const handleRequestRefund = async () => {
     setRefundLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/bookings/request-refund/${appointment_id}`, {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const customer = `${user.first_name || ""} ${user.last_name || ""}`.trim();
+      const amount = servicePrice;
+      const bookingId = appointment_id;
+      const ownerId = booking?.applicationId; // Use applicationId as ownerId
+
+      // Debug log
+      console.log({
+        customer,
+        amount,
+        reason: refundReason,
+        bookingId,
+        ownerId
+      });
+
+      // Validation
+      if (!customer || !amount || !refundReason || !bookingId || !ownerId) {
+        alert("Please fill all refund details.");
+        setRefundLoading(false);
+        return;
+      }
+
+      const res = await fetch(`http://localhost:3000/api/refunds`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: refundReason }),
+        body: JSON.stringify({
+          customer,
+          amount,
+          reason: refundReason,
+          bookingId,
+          ownerId
+        }),
       });
       if (res.ok) {
         setRefundSuccess(true);
@@ -203,11 +231,11 @@ function BookingConfirmation() {
 
   const latestPaymentStatus = getLatestPaymentStatus();
 
-  // Helper to check if booking is paid
+  // Helper to check if booking is paid or partial
   const isPaid =
-    latestPaymentStatus === "Paid" ||
+    ["Paid", "Partial"].includes(latestPaymentStatus) ||
     (Array.isArray(booking?.payments) &&
-      booking.payments.some((p) => p.payment_status === "Paid"));
+      booking.payments.some((p) => ["Paid", "Partial"].includes(p.payment_status)));
 
   return (
     <div className="min-h-screen flex bg-[#c8f1ff]">
