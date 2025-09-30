@@ -1,13 +1,13 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { Trophy, Eye, Users, FileText, Inbox, LogOut, UserCircle } from "lucide-react";
 import { Bar, Doughnut } from "react-chartjs-2";
 import { Chart, CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend } from "chart.js";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 Chart.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
 
-function getAnalytics(payments) {
+function getAnalytics(payments, refunds) {
   const totalIncome = payments.reduce((sum, p) => sum + (p.amount > 0 ? Number(p.amount) : 0), 0);
-  const totalRefund = payments.reduce((sum, p) => sum + (p.amount < 0 ? Math.abs(Number(p.amount)) : 0), 0);
+  const totalRefund = refunds.reduce((sum, r) => sum + (r.amount ? Number(r.amount) : 0), 0);
   const byMethod = {};
   payments.forEach(p => {
     byMethod[p.method] = (byMethod[p.method] || 0) + Number(p.amount);
@@ -17,6 +17,7 @@ function getAnalytics(payments) {
 
 function AdminDashboard() {
   const [payments, setPayments] = useState([]);
+  const [refunds, setRefunds] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,6 +25,11 @@ function AdminDashboard() {
       .then(res => res.json())
       .then(data => setPayments(data))
       .catch(() => setPayments([]));
+
+    fetch("http://localhost:3000/api/refunds")
+      .then(res => res.json())
+      .then(data => setRefunds(data))
+      .catch(() => setRefunds([]));
   }, []);
 
   const handleLogout = () => {
@@ -32,7 +38,7 @@ function AdminDashboard() {
     navigate("/login");
   };
 
-  const analytics = getAnalytics(payments);
+  const analytics = getAnalytics(payments, refunds);
 
   // Chart data
   const barData = {

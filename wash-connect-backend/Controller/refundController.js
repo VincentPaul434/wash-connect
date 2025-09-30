@@ -67,4 +67,3 @@ exports.updateRefundStatus = async (req, res) => {
   }
 };
 
-localStorage.setItem("owner", JSON.stringify({ owner_id: 4 }));

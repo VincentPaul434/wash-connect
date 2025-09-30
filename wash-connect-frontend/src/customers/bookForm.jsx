@@ -41,6 +41,7 @@ function BookForm() {
   const [personnelList, setPersonnelList] = useState([]);
   const [selectedPersonnelId, setSelectedPersonnelId] = useState("");
   const [fetchedServices, setFetchedServices] = useState([]);
+  const [unavailablePersonnelIds, setUnavailablePersonnelIds] = useState([]);
   // Check if the booking is completed and paid (after booking is made)
   const [bookingStatus, setBookingStatus] = useState({ completed: false, paid: false });
 
@@ -57,30 +58,32 @@ function BookForm() {
 
   // Fetch personnel (via application -> owner -> personnel)
   useEffect(() => {
-    (async () => {
+    async function fetchPersonnel() {
+      if (!applicationId || !selectedServiceName) {
+        setPersonnelList([]);
+        return;
+      }
       try {
-        if (!applicationId) {
+        // 1. Get carwash application by ID to find ownerId
+        const appRes = await fetch(`http://localhost:3000/api/carwash-applications/by-application/${applicationId}`);
+        const appData = await appRes.json();
+        const ownerId = appData.ownerId;
+        if (!ownerId) {
           setPersonnelList([]);
           return;
         }
-        const res = await fetch(
-          `http://localhost:3000/api/carwash-applications/by-application/${applicationId}`
+        // 2. Fetch personnel by ownerId and role
+        const personnelRes = await fetch(
+          `http://localhost:3000/api/personnel/by-owner/${ownerId}?role=${encodeURIComponent(selectedServiceName)}`
         );
-        const app = await res.json();
-        if (app?.ownerId) {
-          const personnelRes = await fetch(
-            `http://localhost:3000/api/personnel/by-owner/${app.ownerId}`
-          );
-          const personnelData = await personnelRes.json();
-          setPersonnelList(Array.isArray(personnelData) ? personnelData : []);
-        } else {
-          setPersonnelList([]);
-        }
+        const personnelData = await personnelRes.json();
+        setPersonnelList(Array.isArray(personnelData) ? personnelData : []);
       } catch {
         setPersonnelList([]);
       }
-    })();
-  }, [applicationId]);
+    }
+    fetchPersonnel();
+  }, [applicationId, selectedServiceName]);
 
   // Fetch services (optional, to fill price/image if not passed via state)
   useEffect(() => {
@@ -199,6 +202,27 @@ function BookForm() {
         setBookingStatus({ completed: false, paid: false });
       });
   }, [appointment_id]);
+
+  // Fetch unavailable personnel for selected date/time
+  useEffect(() => {
+    async function fetchUnavailablePersonnel() {
+      if (!form.date || !form.time) {
+        setUnavailablePersonnelIds([]);
+        return;
+      }
+      try {
+        const res = await fetch(
+          `http://localhost:3000/api/bookings/by-date-time?date=${form.date}&time=${form.time}`
+        );
+        const data = await res.json();
+        // Assume API returns [{ personnelId: 1 }, ...]
+        setUnavailablePersonnelIds(data.map(b => String(b.personnelId)));
+      } catch {
+        setUnavailablePersonnelIds([]);
+      }
+    }
+    fetchUnavailablePersonnel();
+  }, [form.date, form.time]);
 
   const selectedPersonnel = personnelList.find(
     (p) => String(p.personnelId) === String(selectedPersonnelId)
@@ -395,8 +419,18 @@ function BookForm() {
                     >
                       <option value="">Select...</option>
                       {personnelList.map((p) => (
-                        <option key={p.personnelId} value={p.personnelId}>
+                        <option
+                          key={p.personnelId}
+                          value={p.personnelId}
+                          disabled={unavailablePersonnelIds.includes(String(p.personnelId))}
+                          style={
+                            unavailablePersonnelIds.includes(String(p.personnelId))
+                              ? { backgroundColor: "#f3f3f3", color: "#bbb" }
+                              : {}
+                          }
+                        >
                           {p.first_name} {p.last_name}
+                          {unavailablePersonnelIds.includes(String(p.personnelId)) ? " (Unavailable)" : ""}
                         </option>
                       ))}
                     </select>
@@ -449,10 +483,18 @@ function BookForm() {
             <button
               type="submit"
               className="w-full mt-4 bg-[#b3e0ff] hover:bg-[#90c8e8] text-black text-2xl font-medium py-2 rounded border border-gray-300 transition"
-              disabled={submitting}
+              disabled={
+                submitting ||
+                (selectedPersonnelId && unavailablePersonnelIds.includes(String(selectedPersonnelId)))
+              }
             >
               {submitting ? "Submitting..." : "Submit"}
             </button>
+            {selectedPersonnelId && unavailablePersonnelIds.includes(String(selectedPersonnelId)) && (
+              <div className="text-red-500 text-sm mt-2">
+                This carwash boy is unavailable within 1 hour of your selected time. Please choose another time or personnel.
+              </div>
+            )}
           </form>
 
           {/* Example usage: show a message if booking is completed and paid */}

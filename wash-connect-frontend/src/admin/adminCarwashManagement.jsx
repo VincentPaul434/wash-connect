@@ -34,6 +34,30 @@ function AdminCarwashManagement() {
       (s.location || "").toLowerCase().includes(search.toLowerCase())
   );
 
+  const handleBan = async (applicationId) => {
+    if (!window.confirm("Are you sure you want to ban this carwash shop?")) return;
+    try {
+      await fetch(`http://localhost:3000/api/admin/shops/${applicationId}/ban`, {
+        method: "PATCH",
+      });
+      fetchShops(); // Refresh list
+    } catch {
+      alert("Failed to ban shop.");
+    }
+  };
+
+  const handleUnban = async (applicationId) => {
+    if (!window.confirm("Are you sure you want to unban this carwash shop?")) return;
+    try {
+      await fetch(`http://localhost:3000/api/admin/shops/${applicationId}/enable`, {
+        method: "PATCH",
+      });
+      fetchShops(); // Refresh list
+    } catch {
+      alert("Failed to unban shop.");
+    }
+  };
+
   return (
     <div className="min-h-screen flex bg-white">
       {/* Sidebar */}
@@ -174,15 +198,33 @@ function AdminCarwashManagement() {
                           </td>
                           <td className="py-3 px-4">{shop.location}</td>
                           <td className="py-3 px-4">
-                            <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">Active</span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <button className="bg-red-100 text-red-600 px-4 py-1 rounded-full font-semibold flex items-center gap-1 hover:bg-red-200">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M18 6L6 18M6 6l12 12" />
-                              </svg>
-                              Ban
-                            </button>
+                            {shop.status === "Banned" ? (
+                              <>
+                                <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-semibold mr-2">Banned</span>
+                                <button
+                                  className="bg-green-100 text-green-700 px-4 py-1 rounded-full font-semibold flex items-center gap-1 hover:bg-green-200"
+                                  onClick={() => handleUnban(shop.applicationId)}
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  Unban
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold mr-2">Active</span>
+                                <button
+                                  className="bg-red-100 text-red-600 px-4 py-1 rounded-full font-semibold flex items-center gap-1 hover:bg-red-200"
+                                  onClick={() => handleBan(shop.applicationId)}
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M18 6L6 18M6 6l12 12" />
+                                  </svg>
+                                  Ban
+                                </button>
+                              </>
+                            )}
                           </td>
                         </tr>
                       );

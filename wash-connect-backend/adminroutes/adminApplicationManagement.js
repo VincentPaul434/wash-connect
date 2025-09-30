@@ -38,6 +38,7 @@ router.patch('/shops/:id/ban', async (req, res) => {
         }
         res.json({ message: 'Shop banned successfully' });
     } catch (error) {
+        console.error(error); // Add this for debugging
         res.status(500).json({ error: 'Failed to ban shop', details: error.message });
     }
 });

@@ -14,19 +14,16 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 exports.getPersonnelByOwner = async (req, res) => {
-    const { ownerId } = req.params;
-    try {
-        const [rows] = await pool.query(
-            `SELECT personnelId, owner_id, first_name, last_name, role, type, address, email, avatar,
-                    day_available, time_available, time_availability
-             FROM personnel
-             WHERE owner_id = ?`,
-            [ownerId]
-        );
-        res.json(rows);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch personnel', details: error.message });
-    }
+  const { ownerId } = req.params;
+  const { role } = req.query;
+  let query = 'SELECT * FROM personnel WHERE owner_id = ?';
+  let params = [ownerId];
+  if (role) {
+    query += ' AND role = ?';
+    params.push(role);
+  }
+  const [rows] = await pool.query(query, params);
+  res.json(rows);
 };
 
 exports.assignPersonnel = async (req, res) => {
@@ -133,7 +130,7 @@ exports.assignToService = async (req, res) => {
   }
 };
 
-// List personnel assigned to a service
+// GET /api/personnel/by-service/:serviceId
 exports.getPersonnelByService = async (req, res) => {
   const { serviceId } = req.params;
   if (!serviceId) return res.status(400).json({ error: 'serviceId is required' });

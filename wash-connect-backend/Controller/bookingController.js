@@ -64,5 +64,21 @@ exports.getPersonnelAvailability = async (req, res) => {
   }
 };
 
+exports.getBookingsByDateTime = async (req, res) => {
+  const { date, time } = req.query;
+  if (!date || !time) {
+    return res.status(400).json({ error: 'Missing date or time' });
+  }
+  try {
+    const [rows] = await pool.query(
+      'SELECT personnelId FROM bookings WHERE schedule_date = ? AND schedule_time = ? AND personnelId IS NOT NULL',
+      [date, time]
+    );
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch bookings', details: error.message });
+  }
+};
+
 
 

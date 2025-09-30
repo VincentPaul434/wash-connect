@@ -35,6 +35,7 @@ exports.createBooking = async (req, res) => {
     } = req.body;
 
     try {
+        // Prevent user double-booking
         const [existing] = await pool.query(
             "SELECT * FROM bookings WHERE user_id = ? AND status NOT IN ('Declined', 'Done', 'Cancelled', 'Completed')",
             [user_id]
@@ -42,6 +43,18 @@ exports.createBooking = async (req, res) => {
         if (existing.length > 0) {
             return res.status(400).json({ error: "You have an active booking. Please complete and pay before booking again." });
         }
+
+        // Prevent personnel double-booking
+        if (personnelId) {
+            const [personnelBookings] = await pool.query(
+                "SELECT * FROM bookings WHERE personnelId = ? AND schedule_date = ? AND schedule_time = ? AND status NOT IN ('Declined', 'Done', 'Cancelled', 'Completed')",
+                [personnelId, schedule_date, schedule_time]
+            );
+            if (personnelBookings.length > 0) {
+                return res.status(409).json({ error: "Selected personnel is already booked for this date and time." });
+            }
+        }
+
         if (!user_id || !applicationId || !service_name || !schedule_date || !schedule_time || !address || price === undefined) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
