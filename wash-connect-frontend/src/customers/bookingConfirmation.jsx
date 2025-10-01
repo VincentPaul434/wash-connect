@@ -174,20 +174,12 @@ function BookingConfirmation() {
     try {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
       const customer = `${user.first_name || ""} ${user.last_name || ""}`.trim();
-      const amount = servicePrice;
+
+      // Refund amount logic: use paidAmount (partial or full)
+      const amount = paidAmount;
       const bookingId = appointment_id;
-      const ownerId = booking?.applicationId; // Use applicationId as ownerId
+      const ownerId = booking?.applicationId;
 
-      // Debug log
-      console.log({
-        customer,
-        amount,
-        reason: refundReason,
-        bookingId,
-        ownerId
-      });
-
-      // Validation
       if (!customer || !amount || !refundReason || !bookingId || !ownerId) {
         alert("Please fill all refund details.");
         setRefundLoading(false);
@@ -248,11 +240,7 @@ function BookingConfirmation() {
           </span>
         </div>
         <nav className="flex-1 px-4 py-6 space-y-2">
-          <div className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer">
-            <FaEnvelope className="mr-3 w-5 h-5" />
-            Inbox
-            <span className="ml-auto bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-sm">0</span>
-          </div>
+          {/* Inbox removed */}
           <div
             className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
             onClick={() => navigate('/user-dashboard')}
@@ -274,7 +262,6 @@ function BookingConfirmation() {
             <FaHeart className="mr-3 w-5 h-5" />
             Bookings
           </div>
-          {/* Removed <hr className="my-4" /> */}
           {/* Track Status tab above Appointment, NOT bold or highlighted */}
           <div
             className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-cyan-100 text-cyan-700 cursor-pointer"
@@ -586,6 +573,9 @@ function BookingConfirmation() {
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
               <FaUndo className="text-lg" /> Request a Refund
             </h2>
+            <div className="mb-2 font-medium">
+              Refund Amount: <span className="font-bold">PHP {paidAmount}</span>
+            </div>
             <label className="block mb-2 font-medium">Reason for refund:</label>
             <textarea
               className="w-full border rounded p-2 mb-4"

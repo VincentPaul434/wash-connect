@@ -32,6 +32,15 @@ exports.submitFeedback = async (req, res) => {
         }
         const customer_name = `${userRows[0].first_name} ${userRows[0].last_name}`;
 
+        // Check if feedback already exists for this user and appointment
+        const [existing] = await pool.query(
+            "SELECT * FROM booking_feedbacks WHERE appointment_id = ? AND customer_name = ?",
+            [appointmentIdNum, customer_name]
+        );
+        if (existing.length > 0) {
+            return res.status(409).json({ error: "Feedback already submitted for this booking." });
+        }
+
         // Insert feedback (update table name if needed)
         await pool.query(
             "INSERT INTO booking_feedbacks (appointment_id, customer_name, rating, comment) VALUES (?, ?, ?, ?)",

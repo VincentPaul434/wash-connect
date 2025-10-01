@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { User } from "lucide-react";
-import { FaEnvelope, FaUser, FaStar, FaHeart, FaCalendarAlt, FaSignOutAlt, FaSearch } from "react-icons/fa";
+import { FaUser, FaStar, FaHeart, FaCalendarAlt, FaSignOutAlt, FaSearch } from "react-icons/fa";
+import { MoreVertical } from "lucide-react"; // Add at the top with other imports
 import toast, { Toaster } from "react-hot-toast";
 
 function BookingPage() {
@@ -43,7 +44,10 @@ function BookingPage() {
 			return {};
 		}
 	};
+	const user = safeGetUser();
+	const userName = `${user.first_name || ""} ${user.last_name || ""}`.trim();
 
+	// Logout handler
 	const handleLogout = () => {
 		localStorage.removeItem("token");
 		localStorage.removeItem("user");
@@ -59,12 +63,17 @@ function BookingPage() {
 	useEffect(() => {
 		const user = safeGetUser();
 		const userId = user.id || user.user_id;
-		if (!userId) return;
+		const token = localStorage.getItem("token");
+		if (!userId || !token) return;
 
-		fetch(`http://localhost:3000/api/bookings/customers/${userId}`)
+		fetch(`http://localhost:3000/api/bookings/customers/${userId}`, {
+			headers: {
+				"Authorization": `Bearer ${token}`,
+				"Content-Type": "application/json"
+			}
+		})
 			.then((res) => res.ok ? res.json() : Promise.reject())
 			.then((bookings) => {
-				// Only treat Declined, Cancelled, Completed as inactive
 				const active = Array.isArray(bookings)
 					? bookings.find((b) => !["Declined", "Cancelled", "Completed"].includes(b.status))
 					: null;
@@ -86,7 +95,14 @@ function BookingPage() {
 		const ctrl = new AbortController();
 		setSvcLoading(true);
 
-		fetch(`http://localhost:3000/api/services/by-application/${applicationId}`, { signal: ctrl.signal })
+		const token = localStorage.getItem("token");
+		fetch(`http://localhost:3000/api/services/by-application/${applicationId}`, {
+			signal: ctrl.signal,
+			headers: {
+				"Authorization": `Bearer ${token}`,
+				"Content-Type": "application/json"
+			}
+		})
 			.then((res) => (res.ok ? res.json() : Promise.resolve([])))
 			.then((rows) => {
 				const list = Array.isArray(rows) ? rows : [];
@@ -174,6 +190,8 @@ function BookingPage() {
 		navigate("/track-status");
 	};
 
+	const [menuOpen, setMenuOpen] = useState(false);
+
 	return (
 		<div className="flex min-h-screen bg-gradient-to-br from-[#c8f1ff] to-[#e6f7ff]">
 			<Toaster position="top-center" />
@@ -185,11 +203,6 @@ function BookingPage() {
 					</span>
 				</div>
 				<nav className="flex-1 px-4 py-6 space-y-2">
-					<div className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer">
-						<FaEnvelope className="mr-3 w-5 h-5" />
-						Inbox
-						<span className="ml-auto bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-sm">0</span>
-					</div>
 					<div
 						className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
 						onClick={() => navigate("/user-dashboard")}
@@ -252,14 +265,40 @@ function BookingPage() {
 				{/* Header */}
 				<header className="flex items-center px-8 py-6 bg-gradient-to-r from-[#7cc3e2] to-[#a8d6ea] border-b border-gray-200">
 					<span className="text-3xl font-semibold text-white">{carwashName}</span>
-					<div className="ml-auto flex items-center gap-6 text-white">
+					<div className="ml-auto flex items-center gap-6 text-white relative">
 						<span className="flex items-center text-sm cursor-pointer">
 							<span className="mr-1">💬</span> Message
 						</span>
-						<span className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+						{/* Profile icon with name */}
+						<div className="flex items-center gap-2 bg-white rounded-full px-3 py-1 border border-cyan-200">
 							<User className="w-5 h-5 text-blue-400" />
-						</span>
-						<span className="text-2xl">•••</span>
+							<span className="text-sm font-medium text-gray-700">
+								{userName || "User"}
+							</span>
+						</div>
+						{/* Three dots menu */}
+						<div className="relative">
+							<button
+								className="p-2 rounded-full hover:bg-gray-200"
+								onClick={() => setMenuOpen((v) => !v)}
+								aria-label="Open menu"
+							>
+								<MoreVertical className="w-6 h-6 text-gray-700" />
+							</button>
+							{menuOpen && (
+								<div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded shadow-lg z-20">
+									<button
+										className="w-full text-left px-4 py-2 hover:bg-cyan-50 text-cyan-700 font-medium"
+										onClick={() => {
+											setMenuOpen(false);
+											navigate("/feedback");
+										}}
+									>
+										Send Feedback
+									</button>
+								</div>
+							)}
+						</div>
 					</div>
 				</header>
 

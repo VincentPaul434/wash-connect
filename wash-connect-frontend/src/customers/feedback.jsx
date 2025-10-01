@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import toast, { Toaster } from "react-hot-toast"; // Add this import at the top
 
 function Feedback() {
   const location = useLocation();
@@ -12,14 +13,20 @@ function Feedback() {
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
   const [eligibleBookings, setEligibleBookings] = useState([]);
+  const [alreadyGiven, setAlreadyGiven] = useState(false);
 
-  // Fetch completed bookings for the user (carwash_name included from backend)
-  useEffect(() => {
+  const fetchEligibleBookings = () => {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     const user_id = user.user_id || user.id;
+    const token = localStorage.getItem("token");
     if (!user_id) return;
 
-    fetch(`http://localhost:3000/api/bookings/customers/${user_id}`)
+    fetch(`http://localhost:3000/api/bookings/customers/${user_id}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
+    })
       .then(res => res.ok ? res.json() : [])
       .then(bookings => {
         const eligible = (bookings || []).filter(
@@ -28,14 +35,24 @@ function Feedback() {
             (
               b.payment_status === "Paid" ||
               (Array.isArray(b.payments) && b.payments.some(p => p.payment_status === "Paid"))
+            ) &&
+            !(
+              Array.isArray(b.feedbacks) &&
+              b.feedbacks.some(fb => String(fb.user_id) === String(user_id))
             )
         );
         setEligibleBookings(eligible);
-        if (!selectedId && eligible.length > 0) {
-          setSelectedId(eligible[0].appointment_id);
+        // If the current selectedId is no longer eligible, reset it
+        if (!eligible.some(b => b.appointment_id === selectedId)) {
+          setSelectedId(eligible.length > 0 ? eligible[0].appointment_id : "");
         }
       })
       .catch(() => {});
+  };
+
+  // Fetch completed bookings for the user (carwash_name included from backend)
+  useEffect(() => {
+    fetchEligibleBookings();
   }, []);
 
   // Fetch booking details for the selected appointment
@@ -46,11 +63,26 @@ function Feedback() {
       return;
     }
     setLoading(true);
-    fetch(`http://localhost:3000/api/bookings/${selectedId}`)
+    const token = localStorage.getItem("token");
+    fetch(`http://localhost:3000/api/bookings/${selectedId}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
+    })
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         setBooking(data);
         setLoading(false);
+        // Check if feedback already exists
+        if (data && Array.isArray(data.feedbacks)) {
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          const user_id = user.user_id || user.id;
+          const found = data.feedbacks.some(fb => fb.user_id === user_id);
+          setAlreadyGiven(found);
+        } else {
+          setAlreadyGiven(false);
+        }
       })
       .catch(() => {
         setError("Failed to fetch booking.");
@@ -79,19 +111,43 @@ function Feedback() {
     try {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
       const user_id = user.user_id || user.id;
+      const token = localStorage.getItem("token");
       const res = await fetch(`http://localhost:3000/api/feedback/${selectedId}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
           user_id,
           rating,
           comment: feedback,
         }),
       });
+      if (res.status === 409) {
+        toast("You have already submitted feedback for this booking.", { icon: "✅" }); // <-- Show toast instead of error
+        setAlreadyGiven(true);
+        return;
+      }
       if (res.ok) {
         setMsg("Thank you for your feedback!");
         setFeedback("");
         setRating(5);
+        fetchEligibleBookings();
+        fetch(`http://localhost:3000/api/bookings/${selectedId}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        })
+          .then(res => res.ok ? res.json() : null)
+          .then(data => {
+            setBooking(data);
+            if (data && Array.isArray(data.feedbacks)) {
+              const found = data.feedbacks.some(fb => fb.user_id === user_id);
+              setAlreadyGiven(found);
+            }
+          });
       } else {
         setError("Failed to submit feedback.");
       }
@@ -105,6 +161,7 @@ function Feedback() {
 
   return (
     <div className="max-w-lg mx-auto mt-12 bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
+      <Toaster position="top-right" /> {/* <-- Add this line */}
       <div className="mb-6 flex items-center gap-3">
         <span className="text-blue-600 text-3xl">⭐</span>
         <h2 className="text-2xl font-bold text-gray-800">
@@ -133,7 +190,14 @@ function Feedback() {
               ))}
             </select>
           </div>
-          {canGiveFeedback && (
+          {alreadyGiven ? (
+            <div className="text-green-700 bg-green-50 border border-green-200 rounded-lg p-4 mb-4 flex items-center gap-2">
+              <span className="text-xl">✅</span>
+              <span>
+                You have already submitted feedback for this booking.
+              </span>
+            </div>
+          ) : canGiveFeedback && (
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label className="block font-semibold mb-1 text-gray-700">Rating</label>
@@ -141,6 +205,7 @@ function Feedback() {
                   value={rating}
                   onChange={e => setRating(Number(e.target.value))}
                   className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-200 focus:outline-none bg-gray-50"
+                  disabled={alreadyGiven}
                 >
                   {[5, 4, 3, 2, 1].map(r => (
                     <option key={r} value={r}>{r} Star{r > 1 ? "s" : ""}</option>
@@ -156,11 +221,15 @@ function Feedback() {
                   rows={4}
                   required
                   placeholder="Share your experience..."
+                  disabled={alreadyGiven}
                 />
               </div>
               <button
                 type="submit"
-                className="bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-700 focus:ring-2 focus:ring-blue-300 transition"
+                className={`bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold transition ${
+                  alreadyGiven ? "bg-gray-400 cursor-not-allowed" : "hover:bg-blue-700 focus:ring-2 focus:ring-blue-300"
+                }`}
+                disabled={alreadyGiven}
               >
                 Submit Feedback
               </button>
@@ -168,7 +237,7 @@ function Feedback() {
               {error && <div className="text-red-700 bg-red-50 border border-red-200 rounded-lg p-3 mt-2">{error}</div>}
             </form>
           )}
-          {!canGiveFeedback && (
+          {!canGiveFeedback && !alreadyGiven && (
             <div className="text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 flex items-center gap-2">
               <span className="text-xl">⚠️</span>
               <span>

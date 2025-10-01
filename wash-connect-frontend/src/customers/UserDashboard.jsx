@@ -54,32 +54,38 @@ function UserDashboard() {
 
   // Fetch user's active booking and all bookings
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user") || "{}")
-    const userId = user.id || user.user_id
-    if (userId) {
-      fetch(`http://localhost:3000/api/bookings/customers/${userId}`)
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const userId = user.id || user.user_id;
+    const token = localStorage.getItem("token");
+    if (userId && token) {
+      fetch(`http://localhost:3000/api/bookings/customers/${userId}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      })
         .then((res) => res.json())
         .then((bookingsData) => {
-          // Include Completed bookings in My Bookings
           setBookings(
             (bookingsData || []).filter(
               (b) => b.status !== "Declined" && b.status !== "Cancelled"
             )
-          )
+          );
         })
         .catch(() => {
-          setBookings([])
-        })
+          setBookings([]);
+        });
     } else {
-      setBookings([])
+      setBookings([]);
     }
   }, [])
 
   // Logout handler
   const handleLogout = () => {
-    localStorage.removeItem("token")
-    localStorage.removeItem("user")
-    navigate("/login")
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    // Optionally clear other authentication-related data here
+    navigate("/login");
   }
 
   // Handle profile picture upload
@@ -106,11 +112,6 @@ function UserDashboard() {
         </div>
         {/* Navigation */}
         <nav className="flex-1 px-4 py-6 space-y-2">
-          <div className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer">
-            <FaEnvelope className="mr-3 w-5 h-5" />
-            Inbox
-            <span className="ml-auto bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-sm">0</span>
-          </div>
           <div className="flex items-center w-full px-4 py-3 rounded-lg bg-cyan-100 text-cyan-700 font-semibold cursor-pointer">
             <FaUser className="mr-3 w-5 h-5" />
             Account
@@ -169,9 +170,12 @@ function UserDashboard() {
             <span className="text-2xl font-bold">My Account</span>
           </div>
           <div className="flex items-center gap-4 relative">
-            <span className="text-sm font-medium text-gray-700">{userInfo.firstName || "User"}</span>
-            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center border border-cyan-200">
+            {/* Profile icon with name */}
+            <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1 border border-cyan-200">
               <FaUser className="w-5 h-5 text-blue-400" />
+              <span className="text-sm font-medium text-gray-700">
+                {userInfo.firstName} {userInfo.lastName}
+              </span>
             </div>
             {/* Three dots menu */}
             <HeaderMenuDropdown navigate={navigate} />

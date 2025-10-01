@@ -11,15 +11,28 @@ export default function TrackStatus() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5;
 
-  // Fetch bookings for current user
+  // Fetch bookings for current user with token
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     const userId = user.id || user.user_id;
-    if (!userId) return;
-    fetch(`http://localhost:3000/api/bookings/customers/${userId}`)
+    const token = localStorage.getItem("token");
+    if (!userId || !token) return;
+    fetch(`http://localhost:3000/api/bookings/customers/${userId}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
+    })
       .then((res) => res.json())
       .then((data) => setBookings(data || []));
   }, []);
+
+  // Logout handler
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
 
   // Filter for Completed, On Going, and Halfway bookings first
   const filteredBookings = bookings.filter(
@@ -55,11 +68,6 @@ export default function TrackStatus() {
           </span>
         </div>
         <nav className="flex-1 px-4 py-6 space-y-2">
-          <div className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer">
-            <FaEnvelope className="mr-3 w-5 h-5" />
-            Inbox
-            <span className="ml-auto bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-sm">0</span>
-          </div>
           <div
             className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
             onClick={() => navigate("/user-dashboard")}
@@ -106,7 +114,10 @@ export default function TrackStatus() {
             Appointment
           </div>
           <div className="mt-auto px-4 pt-8">
-            <div className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer" onClick={() => navigate("/login")}>
+            <div
+              className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
+              onClick={handleLogout}
+            >
               <span className="text-xl">📁</span>
               <span className="text-gray-700">LogOut</span>
             </div>

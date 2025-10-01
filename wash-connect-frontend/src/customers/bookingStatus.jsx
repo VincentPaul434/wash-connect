@@ -31,6 +31,16 @@ function BookingStatus() {
     }
   }, [booking, navigate, appointment_id]);
 
+  // Redirect to user dashboard if declined
+  useEffect(() => {
+    if (booking?.status === "Declined") {
+      const timer = setTimeout(() => {
+        navigate("/user-dashboard");
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [booking, navigate]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#c8f1ff]">

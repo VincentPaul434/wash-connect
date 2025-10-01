@@ -1,14 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  FaEnvelope,
   FaUser,
   FaStar,
   FaHeart,
   FaCalendarAlt,
   FaSignOutAlt,
 } from "react-icons/fa";
-import { Search, MapPin } from "lucide-react";
+import { Search, MapPin, MoreVertical } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 
 const MAIN_LOCATIONS = ["All", "Cordova", "Cebu City", "Mandaue", "Lapu-Lapu"];
@@ -22,6 +21,35 @@ const normalizeLogo = (raw) => {
   return `http://localhost:3000${s}`;
 };
 
+function HeaderMenuDropdown({ navigate }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        className="p-2 rounded-full hover:bg-gray-200"
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Open menu"
+      >
+        <MoreVertical className="w-6 h-6 text-gray-500" />
+      </button>
+      {open && (
+        <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded shadow-lg z-20">
+          <button
+            className="w-full text-left px-4 py-2 hover:bg-cyan-50 text-cyan-700 font-medium"
+            onClick={() => {
+              setOpen(false);
+              navigate("/feedback");
+            }}
+          >
+            Give Feedback
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CarwashShopPage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
@@ -29,6 +57,11 @@ function CarwashShopPage() {
   const [shops, setShops] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeBooking, setActiveBooking] = useState(null);
+  const [shopRatings, setShopRatings] = useState({}); // { [applicationId]: avgRating }
+
+  // Get user info from localStorage
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const userName = `${user.first_name || ""} ${user.last_name || ""}`.trim();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -39,7 +72,13 @@ function CarwashShopPage() {
     const fetchShops = async () => {
       setLoading(true);
       try {
-        const res = await fetch("http://localhost:3000/api/carwash-applications/approved");
+        const token = localStorage.getItem("token");
+        const res = await fetch("http://localhost:3000/api/carwash-applications/approved", {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        });
         const data = await res.json();
         setShops(Array.isArray(data) ? data : []);
       } catch {
@@ -54,11 +93,16 @@ function CarwashShopPage() {
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     const userId = user.id || user.user_id;
-    if (userId) {
-      fetch(`http://localhost:3000/api/bookings/customers/${userId}`)
+    const token = localStorage.getItem("token");
+    if (userId && token) {
+      fetch(`http://localhost:3000/api/bookings/customers/${userId}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      })
         .then((res) => res.ok ? res.json() : [])
         .then((bookingsData) => {
-          // Only treat Declined, Cancelled, Completed as inactive
           const latest = (bookingsData || []).find(
             (b) => !["Declined", "Cancelled", "Completed"].includes(b.status)
           );
@@ -67,6 +111,35 @@ function CarwashShopPage() {
         .catch(() => setActiveBooking(null));
     }
   }, []);
+
+  // Fetch ratings for all shops after shops are loaded
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    async function fetchRatings() {
+      const ratings = {};
+      for (const shop of shops) {
+        try {
+          const res = await fetch(
+            `http://localhost:3000/api/reviews/${shop.applicationId}`,
+            {
+              headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+              }
+            }
+          );
+          const data = await res.json();
+          // Use avgRating from backend response
+          ratings[shop.applicationId] =
+            typeof data.avgRating === "number" ? data.avgRating : 0;
+        } catch {
+          ratings[shop.applicationId] = 0;
+        }
+      }
+      setShopRatings(ratings);
+    }
+    if (shops.length > 0) fetchRatings();
+  }, [shops]);
 
   const filteredShops = useMemo(() => {
     const byLocation = shops.filter((shop) => {
@@ -131,11 +204,6 @@ function CarwashShopPage() {
           </span>
         </div>
         <nav className="flex-1 px-4 py-6 space-y-2">
-          <div className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer">
-            <FaEnvelope className="mr-3 w-5 h-5" />
-            Inbox
-            <span className="ml-auto bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-sm">0</span>
-          </div>
           <div
             className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-gray-100 text-gray-700 cursor-pointer"
             onClick={() => navigate("/user-dashboard")}
@@ -213,9 +281,15 @@ function CarwashShopPage() {
                 className="pl-10 pr-4 py-2 rounded-full border border-white/40 bg-white/90 text-gray-700 focus:outline-none w-64"
               />
             </div>
-            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+            {/* Profile icon with name */}
+            <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1 border border-cyan-200">
               <FaUser className="w-5 h-5 text-blue-400" />
+              <span className="text-sm font-medium text-gray-700">
+                {userName || "User"}
+              </span>
             </div>
+            {/* Three dots menu */}
+            <HeaderMenuDropdown navigate={navigate} />
           </div>
         </header>
 
@@ -282,6 +356,7 @@ function CarwashShopPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 items-stretch">
                 {filteredShops.map((shop) => {
                   const logoUrl = normalizeLogo(shop.logo);
+                  const avgRating = shopRatings[shop.applicationId];
                   return (
                     <div
                       key={shop.applicationId}
@@ -306,7 +381,7 @@ function CarwashShopPage() {
                           </div>
                           <div className="flex items-center gap-1 text-[11px] text-gray-700">
                             <FaStar className="text-yellow-500" />
-                            4.9
+                            {typeof avgRating === "number" ? avgRating.toFixed(1) : "0.0"}
                           </div>
                         </div>
                         <div className="text-[11px] text-gray-500 flex items-center gap-1 mb-2">

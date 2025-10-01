@@ -64,10 +64,15 @@ export default function RescheduleForm() {
       return;
     }
 
+    const token = localStorage.getItem("token");
+
     try {
       const res = await fetch(`http://localhost:3000/api/bookings/reschedule/${appointment_id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({ schedule_date: date, schedule_time: time }),
       });
       if (res.ok) {
