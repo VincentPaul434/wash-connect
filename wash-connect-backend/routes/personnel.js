@@ -17,5 +17,6 @@ router.post('/personnel/assign-to-service', personnelController.assignToService)
 router.get('/personnel/by-service/:serviceId', personnelController.getPersonnelByService);
 router.get('/personnel/:personnel_id/availability', personnelController.getPersonnelAvailability);
 router.get('/bookings/by-date-time', bookingController.getBookingsByDateTime);
+router.put("/personnel/:personnelId", upload.single("avatar"), personnelController.editPersonnel);
 
 module.exports = router;

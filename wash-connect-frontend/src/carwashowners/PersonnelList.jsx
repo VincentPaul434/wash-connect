@@ -283,7 +283,7 @@ function PersonnelList() {
                       Assigned to
                     </button>
                     <button className="text-gray-400 hover:text-gray-700 px-2"
-                      onClick={() => navigate("/personnel-assign", { state: { personnel: p } })}
+                      onClick={() => navigate("/personnel-edit", { state: { personnel: p } })}
                     >
                       <svg width="20" height="20" fill="currentColor">
                         <circle cx="10" cy="5" r="1.5" />

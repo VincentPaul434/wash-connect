@@ -85,7 +85,8 @@ function AddEmployee() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const owner = JSON.parse(localStorage.getItem("carwashOwner"));
-    if (!owner || !owner.id) return;
+    const token = localStorage.getItem("token");
+    if (!owner || !owner.id || !token) return;
 
     const start = normalizeTime(form.start_time);
     const end = normalizeTime(form.end_time);
@@ -121,6 +122,9 @@ function AddEmployee() {
 
     await fetch(`http://localhost:3000/api/personnel`, {
       method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
       body: formData,
     });
     navigate("/personnel-list");

@@ -23,7 +23,7 @@ import CustomerList from './carwashowners/CustomerList';
 import BannedPage from './customers/BannedPage';
 import PersonnelList from './carwashowners/PersonnelList';
 import AddEmployee from './carwashowners/AddEmployee';
-import PersonnelAssign from './carwashowners/personnelAssign';
+import PersonnelEdit from './carwashowners/personnelEdit';
 import Bookings from './carwashowners/booking';
 import AwaitingApproval from './carwashowners/AwaitingApproval';
 import BookingHistory from './carwashowners/bookinghistory';
@@ -64,7 +64,7 @@ function App() {
                 <Route path="/customer-list" element={<CustomerList />} />
                 <Route path="/personnel-list" element={<PersonnelList />} />
                 <Route path="/add-employee" element={<AddEmployee />} />
-                <Route path="/personnel-assign" element={<PersonnelAssign />} />
+                <Route path="/personnel-edit" element={<PersonnelEdit />} />
                 <Route path="/bookings" element={<Bookings />} />
                 <Route path="/awaiting-approval" element={<AwaitingApproval />} />
                 <Route path="/booking-history" element={<BookingHistory />} />

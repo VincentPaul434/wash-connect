@@ -39,8 +39,8 @@ exports.assignPersonnel = async (req, res) => {
         res.json({ message: 'Personnel assigned to appointment successfully' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to assign personnel', details: error.message });
-    }
-};
+  }
+}
 
 exports.createPersonnel = async (req, res) => {
   // For multipart/form-data, fields are in req.body
@@ -182,5 +182,55 @@ exports.getPersonnelAvailability = async (req, res) => {
     res.json(rows[0]);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch personnel availability', details: error.message });
+  }
+};
+
+// PUT /api/personnel/:personnelId
+exports.editPersonnel = async (req, res) => {
+  const { personnelId } = req.params;
+  const {
+    first_name,
+    last_name,
+    role,
+    type,
+    address,
+    email,
+    day_available,
+    time_available,
+    time_availability
+  } = req.body;
+
+  // Build avatar path if uploaded
+  const avatar = req.file ? `/uploads/personnel/${req.file.filename}` : null;
+
+  // Only update fields that are provided
+  const fields = [];
+  const values = [];
+
+  if (first_name) { fields.push("first_name = ?"); values.push(first_name); }
+  if (last_name) { fields.push("last_name = ?"); values.push(last_name); }
+  if (role) { fields.push("role = ?"); values.push(role); }
+  if (type) { fields.push("type = ?"); values.push(type); }
+  if (address) { fields.push("address = ?"); values.push(address); }
+  if (email) { fields.push("email = ?"); values.push(email); }
+  if (avatar) { fields.push("avatar = ?"); values.push(avatar); }
+  if (day_available) { fields.push("day_available = ?"); values.push(day_available); }
+  if (time_available) { fields.push("time_available = ?"); values.push(time_available); }
+  if (time_availability) { fields.push("time_availability = ?"); values.push(time_availability); }
+
+  if (!fields.length) {
+    return res.status(400).json({ error: "No fields to update." });
+  }
+
+  values.push(personnelId);
+
+  try {
+    await pool.query(
+      `UPDATE personnel SET ${fields.join(", ")} WHERE personnelId = ?`,
+      values
+    );
+    res.json({ message: "Personnel updated successfully." });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to update personnel", details: error.message });
   }
 };
