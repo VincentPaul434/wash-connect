@@ -258,6 +258,15 @@ export default function CarwashDashboard() {
 					<FaTrophy className="text-lg" />
 					<span>Earnings Dashboard</span>
 				  </div>
+				  {/* --- Add Request Refund Tab Below --- */}
+				  <div
+					className="flex items-center gap-2 mt-2 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200"
+					onClick={() => navigate('/refund-request')}
+				  >
+					<FaRegFolderOpen className="text-lg" />
+					<span>Request Refund</span>
+				  </div>
+				  {/* --- End Request Refund Tab --- */}
 				  
 				  <hr className="my-4 border-gray-300" />
 				</nav>
