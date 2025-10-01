@@ -192,37 +192,29 @@ export default function CarwashDashboard() {
 				</div>
 				{/* Navigation */}
 				<nav className="flex-1 px-4 space-y-2">
-					<div className="flex items-center justify-between mb-2 hover:bg-gray-100 px-2 py-1 rounded cursor-pointer transition-colors duration-200">
-						<span className="flex items-center gap-2 text-gray-700">
-							<FaRegEnvelope className="text-lg" /> Inbox
-						</span>
-						<span className="text-xs text-gray-700">24</span>
-					</div>
-					
-					<button
-						className={`w-full flex items-center gap-2 px-3 py-2 rounded transition-colors duration-200 ${
-						  activeTab === "overview"
-							? "bg-blue-100 text-blue-700 font-semibold" 
-							: "hover:bg-gray-100 cursor-pointer"
-						}`}
-						onClick={() => setActiveTab("overview")}
-					>
-						<FaRegEye /> Overview
-					</button>
-					
-					<button
-						className={`w-full flex items-center gap-2 px-3 py-2 rounded transition-colors duration-200 ${
-						  activeTab === "customers" 
-							? "bg-blue-100 text-blue-700 font-semibold" 
-							: "hover:bg-gray-100 cursor-pointer"
-						}`}
-				onClick={() => {
-					setActiveTab("customers");
-					navigate("/customer-list");
-				}}>
+				  <button
+					className={`w-full flex items-center gap-2 px-3 py-2 rounded transition-colors duration-200 ${
+					  activeTab === "overview"
+						? "bg-blue-100 text-blue-700 font-semibold" 
+						: "hover:bg-gray-100 cursor-pointer"
+					}`}
+					onClick={() => setActiveTab("overview")}
+				  >
+					<FaRegEye /> Overview
+				  </button>
+				  <button
+					className={`w-full flex items-center gap-2 px-3 py-2 rounded transition-colors duration-200 ${
+					  activeTab === "customers" 
+						? "bg-blue-100 text-blue-700 font-semibold" 
+						: "hover:bg-gray-100 cursor-pointer"
+					}`}
+					onClick={() => {
+						setActiveTab("customers");
+						navigate("/customer-list");
+					}}>
 					<span className="text-lg">★</span> Customers & Employee
 				  </button>
-				  {/* --- Add Status Update Tab Below --- */}
+				  {/* Status Update Tab */}
 				  <button
 					className={`w-full flex items-center gap-2 px-3 py-2 rounded transition-colors duration-200 ${
 					  activeTab === "status-update"
@@ -237,10 +229,7 @@ export default function CarwashDashboard() {
 					<FaRegCheckSquare className="text-lg" />
 					<span>Status Update</span>
 				  </button>
-				  {/* --- End Status Update Tab --- */}
-				  
 				  <hr className="my-2 border-gray-300" />
-				  
 				  <button
 					className="flex items-center gap-2 mb-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200 w-full text-left"
 					onClick={() => navigate("/bookings")}
@@ -248,17 +237,14 @@ export default function CarwashDashboard() {
 					<FaRegCheckSquare className="text-lg" />
 					<span>Manage Bookings</span>
 				  </button>
-				  
 				  <div className="flex items-center gap-2 mb-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200">
 					<FaRegCheckSquare className="text-lg" />
 					<span>Booking History</span>
 				  </div>
-				  
 				  <div className="flex items-center gap-2 mt-2 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200" onClick={() => navigate('/earning-dashboard')}>
 					<FaTrophy className="text-lg" />
 					<span>Earnings Dashboard</span>
 				  </div>
-				  {/* --- Add Request Refund Tab Below --- */}
 				  <div
 					className="flex items-center gap-2 mt-2 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200"
 					onClick={() => navigate('/refund-request')}
@@ -266,8 +252,6 @@ export default function CarwashDashboard() {
 					<FaRegFolderOpen className="text-lg" />
 					<span>Request Refund</span>
 				  </div>
-				  {/* --- End Request Refund Tab --- */}
-				  
 				  <hr className="my-4 border-gray-300" />
 				</nav>
 			  <div className="mt-auto px-4 py-6">
@@ -462,161 +446,160 @@ export default function CarwashDashboard() {
 									View All
 								</button>
 							</div>
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ maxHeight: "350px", overflowY: "auto" }}>
-								{recentBookings.length === 0 && (
-									<div className="text-gray-500 text-center col-span-2">No recent bookings.</div>
-								)}
-								{/* FIX: Define today here */}
-								{(() => {
-									return recentBookings
-										.filter(b => b.status !== "Declined" && b.status !== "Cancelled")
-										.map((booking) => {
-											const apptId = getAppointmentId(booking);
-											return (
-												<div
-													key={apptId} // use the actual id you will send to backend
-													className="flex flex-col md:flex-row items-start md:items-center bg-white border border-gray-200 rounded-xl shadow p-4 gap-4 relative"
-													style={{ borderColor: "#ffeeba", background: "#fffde7" }}
-												>
-													<img
-														src={booking.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(booking.customer_name || "Customer")}`}
-														alt=""
-														className="w-14 h-14 rounded-full object-cover border-2 border-white shadow"
-													/>
-													<div className="flex-1 flex flex-col gap-1">
-														<div className="flex items-center gap-2">
-															<span className="font-semibold text-base">{booking.customer_name}</span>
-															<span className="text-xs text-gray-500">Customer</span>
-															<span className="ml-auto flex items-center gap-1 bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs font-medium">
-																<svg width="12" height="12" fill="currentColor"><circle cx="6" cy="6" r="6" /></svg>
-																{booking.status || "Pending"}
-															</span>
-														</div>
-														<div className="flex items-center gap-2 text-xs text-gray-500">
-															{/* Show booking creation time if available, otherwise show schedule_date */}
-															<span>
-																{booking.created_at
-																? new Date(booking.created_at).toLocaleDateString() +
-																	" " +
-																	new Date(booking.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-																: new Date(booking.schedule_date).toLocaleDateString() +
-																	" " +
-																	new Date(booking.schedule_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-															</span>
-														</div>
-														<div className="flex items-center gap-2 text-xs text-gray-500">
-															{/* Scheduled service time */}
-															<span>
-																Scheduled: {booking.schedule_date
-																	? new Date(booking.schedule_date).toLocaleDateString()
-																	: "N/A"}
-																{/* Show schedule_time if available */}
-																{booking.schedule_time && (
-																	<span className="ml-2">
-																		| Time: {booking.schedule_time}
-																	</span>
-																)}
-															</span>
-														</div>
-														<div className="flex items-center gap-2 text-sm mt-1">
-															<span className="font-semibold">Address:</span>
-															<span className="truncate">{booking.address}</span>
-														</div>
-														<div className="flex items-center gap-2 text-sm">
-															<span className="font-semibold">Services:</span>
-															<span className="truncate">{booking.service_name}</span>
-														</div>
-														<div className="flex items-center gap-2 text-sm">
-															<span className="font-semibold">Email:</span>
-															<span className="truncate">{booking.customer_email}</span>
-														</div>
-														<div className="flex gap-2 mt-2">
-															<button className="flex-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-																View Details
-															</button>
-															{/* Show Confirm/Decline ONLY if status is Pending */}
-															{booking.status === "Pending" && (
-																<>
-																	<button
-																		className="flex-1 px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium hover:bg-green-600 hover:text-white transition-colors duration-150"
-																		onClick={async () => {
-																			if (!apptId) {
-																				showToast("Missing appointment id.", "error");
-																				return;
-																			}
-																			try {
-																				// Optimistic UI
-																				setRecentBookings(prev =>
-																					prev.map(b => getAppointmentId(b) === apptId ? { ...b, status: "Confirmed" } : b)
-																				);
+							<div className="space-y-4 max-h-[400px] overflow-y-auto">
+                {recentBookings.length === 0 && (
+                  <div className="text-gray-500 text-center">No recent bookings.</div>
+                )}
+                {recentBookings
+                  .filter(b => b.status !== "Declined" && b.status !== "Cancelled")
+                  .sort((a, b) => new Date(b.created_at || b.schedule_date) - new Date(a.created_at || a.schedule_date))
+                  .slice(0, 5)
+                  .map((booking) => {
+                    const apptId = getAppointmentId(booking);
+                    return (
+                      <div
+                        key={apptId}
+                        className="flex flex-col md:flex-row items-start md:items-center bg-white border border-gray-200 rounded-xl shadow p-4 gap-4 relative"
+                        style={{ borderColor: "#ffeeba", background: "#fffde7" }}
+                      >
+                        <img
+                          src={booking.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(booking.customer_name || "Customer")}`}
+                          alt=""
+                          className="w-14 h-14 rounded-full object-cover border-2 border-white shadow"
+                        />
+                        <div className="flex-1 flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-base">{booking.customer_name}</span>
+                            <span className="text-xs text-gray-500">Customer</span>
+                            <span className="ml-auto flex items-center gap-1 bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs font-medium">
+                              <svg width="12" height="12" fill="currentColor"><circle cx="6" cy="6" r="6" /></svg>
+                              {booking.status || "Pending"}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            {/* Show booking creation time if available, otherwise show schedule_date */}
+                            <span>
+                              {booking.created_at
+                              ? new Date(booking.created_at).toLocaleDateString() +
+                                " " +
+                                new Date(booking.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                              : new Date(booking.schedule_date).toLocaleDateString() +
+                                " " +
+                                new Date(booking.schedule_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            {/* Scheduled service time */}
+                            <span>
+                              Scheduled: {booking.schedule_date
+                                ? new Date(booking.schedule_date).toLocaleDateString()
+                                : "N/A"}
+                              {/* Show schedule_time if available */}
+                              {booking.schedule_time && (
+                                <span className="ml-2">
+                                  | Time: {booking.schedule_time}
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm mt-1">
+                            <span className="font-semibold">Address:</span>
+                            <span className="truncate">{booking.address}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="font-semibold">Services:</span>
+                            <span className="truncate">{booking.service_name}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="font-semibold">Email:</span>
+                            <span className="truncate">{booking.customer_email}</span>
+                          </div>
+                          <div className="flex gap-2 mt-2">
+                            <button className="flex-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                              View Details
+                            </button>
+                            {/* Show Confirm/Decline ONLY if status is Pending */}
+                            {booking.status === "Pending" && (
+                              <>
+                                <button
+                                  className="flex-1 px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium hover:bg-green-600 hover:text-white transition-colors duration-150"
+                                  onClick={async () => {
+                                    if (!apptId) {
+                                      showToast("Missing appointment id.", "error");
+                                      return;
+                                    }
+                                    try {
+                                      // Optimistic UI
+                                      setRecentBookings(prev =>
+                                        prev.map(b => getAppointmentId(b) === apptId ? { ...b, status: "Confirmed" } : b)
+                                      );
 
-																				const res = await fetch(`http://localhost:3000/api/bookings/confirm/${apptId}`, {
-																					method: "PATCH",
-																					headers: { "Content-Type": "application/json" }
-																				});
+                                      const res = await fetch(`http://localhost:3000/api/bookings/confirm/${apptId}`, {
+                                        method: "PATCH",
+                                        headers: { "Content-Type": "application/json" }
+                                      });
 
-																				if (!res.ok) {
-																					// rollback if failed
-																					setRecentBookings(prev =>
-																						prev.map(b => getAppointmentId(b) === apptId ? { ...b, status: booking.status } : b)
-																					);
-																					const msg = await res.text();
-																					showToast(`Failed to confirm: ${msg || "server error"}`, "error");
-																					return;
-																				}
+                                      if (!res.ok) {
+                                        // rollback if failed
+                                        setRecentBookings(prev =>
+                                          prev.map(b => getAppointmentId(b) === apptId ? { ...b, status: booking.status } : b)
+                                        );
+                                        const msg = await res.text();
+                                        showToast(`Failed to confirm: ${msg || "server error"}`, "error");
+                                        return;
+                                      }
 
-																				showToast("Booking confirmed!", "success");
+                                      showToast("Booking confirmed!", "success");
 
-																				// Refetch to be 100% consistent with DB
-																				const owner = JSON.parse(localStorage.getItem("carwashOwner"));
-																				if (owner?.id) {
-																					const appRes = await fetch(`http://localhost:3000/api/carwash-applications/by-owner/${owner.id}`);
-																					const appData = await appRes.json();
-																					if (appData?.applicationId) {
-																						const bookingsRes = await fetch(`http://localhost:3000/api/bookings/by-application/${appData.applicationId}`);
-																						const bookingsData = await bookingsRes.json();
-																						setRecentBookings(bookingsData);
-																					}
-																				}
-																			} catch {
-																				// rollback on error
-																				setRecentBookings(prev =>
-																					prev.map(b => getAppointmentId(b) === apptId ? { ...b, status: booking.status } : b)
-																				);
-																				showToast("Network error confirming booking.", "error");
-																			}
-																		}}
-																	>
-																		Confirm
-																	</button>
-																	<button
-																		className="flex-1 px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-medium hover:bg-red-600 hover:text-white transition-colors duration-150"
-																		onClick={async () => {
-																			if (!apptId) {
-																				showToast("Missing appointment id.", "error");
-																				return;
-																			}
-																			await fetch(`http://localhost:3000/api/bookings/decline/${apptId}`, { method: "PATCH" });
-																			setRecentBookings(prev => prev.filter(b => getAppointmentId(b) !== apptId));
-																			showToast("Booking declined", "success");
-																		}}
-																	>
-																		Decline
-																	</button>
-																</>
-															)}
-															{/* If cancelled, just display a label */}
-															{booking.status === "Cancelled" && (
-																<span className="flex-1 px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs font-medium text-center">
-																	Cancelled
-																</span>
-															)}
-														</div>
-													</div>
-												</div>
-											);
-										});
-								})()}
+                                      // Refetch to be 100% consistent with DB
+                                      const owner = JSON.parse(localStorage.getItem("carwashOwner"));
+                                      if (owner?.id) {
+                                        const appRes = await fetch(`http://localhost:3000/api/carwash-applications/by-owner/${owner.id}`);
+                                        const appData = await appRes.json();
+                                        if (appData?.applicationId) {
+                                          const bookingsRes = await fetch(`http://localhost:3000/api/bookings/by-application/${appData.applicationId}`);
+                                          const bookingsData = await bookingsRes.json();
+                                          setRecentBookings(bookingsData);
+                                        }
+                                      }
+                                    } catch {
+                                      // rollback on error
+                                      setRecentBookings(prev =>
+                                        prev.map(b => getAppointmentId(b) === apptId ? { ...b, status: booking.status } : b)
+                                      );
+                                      showToast("Network error confirming booking.", "error");
+                                    }
+                                  }}
+                                >
+                                  Confirm
+                                </button>
+                                <button
+                                  className="flex-1 px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-medium hover:bg-red-600 hover:text-white transition-colors duration-150"
+                                  onClick={async () => {
+                                    if (!apptId) {
+                                      showToast("Missing appointment id.", "error");
+                                      return;
+                                    }
+                                    await fetch(`http://localhost:3000/api/bookings/decline/${apptId}`, { method: "PATCH" });
+                                    setRecentBookings(prev => prev.filter(b => getAppointmentId(b) !== apptId));
+                                    showToast("Booking declined", "success");
+                                  }}
+                                >
+                                  Decline
+                                </button>
+                              </>
+                            )}
+                            {/* If cancelled, just display a label */}
+                            {booking.status === "Cancelled" && (
+                              <span className="flex-1 px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs font-medium text-center">
+                                Cancelled
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
 							</div>
 						</div>
 					</section>
@@ -676,7 +659,7 @@ export default function CarwashDashboard() {
             {/* Reviews */}
 						<div className="bg-white rounded-lg shadow p-6">
 							<h4 className="font-semibold text-lg mb-4">Reviews</h4>
-							<div className="space-y-4">
+							<div className="space-y-4 max-h-64 overflow-y-auto"> {/* <-- Make scrollable */}
 								{reviews.length === 0 ? (
 									<div className="text-gray-500 text-sm">No reviews yet.</div>
 								) : (

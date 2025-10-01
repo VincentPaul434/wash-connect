@@ -128,6 +128,17 @@ function Login() {
               </button>
             </div>
 
+            {/* Forgotten password link */}
+            <div className="flex justify-end mb-2">
+              <button
+                type="button"
+                className="text-cyan-600 hover:underline text-sm font-medium"
+                onClick={() => navigate("/forgot-password")}
+              >
+                Forgot password?
+              </button>
+            </div>
+
             {/* Remember me */}
             <div className="flex items-center space-x-3">
               <button

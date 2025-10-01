@@ -35,6 +35,8 @@ import TrackStatus from './customers/trackStatus';
 import RescheduleForm from './customers/RescheduleForm';
 import Feedback from './customers/feedback';
 import RefundRequest from './carwashowners/refundRequest';
+import ShopBanned from './carwashowners/shopbanned'; // <-- Fix import name
+import ForgotPassword from './forgotPassword'; // <-- Fix import path
 
 function App() {
     return (
@@ -54,7 +56,7 @@ function App() {
                 <Route path="/booking-status" element={<BookingStatus />} />
                 <Route path="/reschedule" element={<RescheduleForm />} />
                 <Route path="/feedback" element={<Feedback />} /> 
-               
+                <Route path="/forgot-password" element={<ForgotPassword />} /> 
 
                 {/* Carwash Owner Routes */}
                 <Route path="/carwash-register" element={<CarwashRegister />} />
@@ -74,6 +76,7 @@ function App() {
                 <Route path="/status-update" element={<StatusUpdate />} />
                 <Route path="/track-status" element={<TrackStatus />} />
                 <Route path="/refund-request" element={<RefundRequest />} />
+                <Route path="/shop-banned" element={<ShopBanned />} />
 
                 {/* Admin Routes */}
                 <Route path="/admin-register" element={<AdminRegister />} />

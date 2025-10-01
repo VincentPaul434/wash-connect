@@ -159,12 +159,6 @@ export default function StatusUpdate() {
         </div>
         {/* Navigation */}
         <nav className="flex-1 px-4 space-y-2">
-          <div className="flex items-center justify-between mb-2 hover:bg-gray-100 px-2 py-1 rounded cursor-pointer transition-colors duration-200">
-            <span className="flex items-center gap-2 text-gray-700">
-              <FaRegEnvelope className="text-lg" /> Inbox
-            </span>
-            <span className="text-xs text-gray-700">24</span>
-          </div>
           <button
             className={`w-full flex items-center gap-2 px-3 py-2 rounded transition-colors duration-200 ${
               activeTab === "overview"
@@ -214,13 +208,21 @@ export default function StatusUpdate() {
             <FaRegCheckSquare className="text-lg" />
             <span>Manage Bookings</span>
           </button>
-          <div className="flex items-center gap-2 mb-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200">
+          <div
+            className="flex items-center gap-2 mb-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200"
+            onClick={() => navigate("/booking-history")}
+          >
             <FaRegCheckSquare className="text-lg" />
             <span>Booking History</span>
           </div>
           <div className="flex items-center gap-2 mt-2 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200" onClick={() => navigate('/earning-dashboard')}>
             <FaTrophy className="text-lg" />
             <span>Earnings Dashboard</span>
+          </div>
+          {/* Add Refund Request below Earnings Dashboard */}
+          <div className="flex items-center gap-2 mt-2 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200" onClick={() => navigate('/refund-request')}>
+            <FaRegFolderOpen className="text-lg" />
+            <span>Request Refund</span>
           </div>
           <hr className="my-4 border-gray-300" />
         </nav>

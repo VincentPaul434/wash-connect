@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { FaUserCircle, FaRegCheckSquare, FaTrophy } from "react-icons/fa";
+import { FaRegEye, FaRegCheckSquare, FaTrophy, FaRegFolderOpen, FaUserCircle } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
 export default function BookingHistory() {
@@ -83,25 +83,55 @@ export default function BookingHistory() {
           </div>
         </div>
         <nav className="flex-1 px-4 space-y-2">
-          <button className="w-full flex items-center gap-2 px-3 py-2 rounded transition-colors duration-200 hover:bg-gray-100 cursor-pointer" onClick={() => navigate("/carwash-dashboard")}>Overview</button>
-          <button className="w-full flex items-center gap-2 px-3 py-2 rounded transition-colors duration-200 hover:bg-gray-100 cursor-pointer" onClick={() => navigate("/customer-list")}>Customers & Employee</button>
-          {/* Status Update tab below Customers & Employee */}
           <button
-            class className="flex items-center gap-2 mb-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200 w-full text-left"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded transition-colors duration-200 hover:bg-gray-100 cursor-pointer"
+            onClick={() => navigate("/carwash-dashboard")}
+          >
+            <FaRegEye className="text-lg" />
+            <span>Overview</span>
+          </button>
+          <button
+            className="w-full flex items-center gap-2 px-3 py-2 rounded transition-colors duration-200 hover:bg-gray-100 cursor-pointer"
+            onClick={() => navigate("/customer-list")}
+          >
+            <span className="text-lg">★</span>
+            <span>Customers & Employee</span>
+          </button>
+          <button
+            className="flex items-center gap-2 mb-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200 w-full text-left"
             onClick={() => navigate("/status-update")}
           >
             <FaRegCheckSquare className="text-lg" />
             <span>Status Update</span>
           </button>
           <hr className="my-2 border-gray-300" />
-          <button className="flex items-center gap-2 mb-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200 w-full text-left" onClick={() => navigate("/bookings")}>
-            <FaRegCheckSquare className="text-lg" /><span>Manage Bookings</span>
+          <button
+            className="flex items-center gap-2 mb-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200 w-full text-left"
+            onClick={() => navigate("/bookings")}
+          >
+            <FaRegCheckSquare className="text-lg" />
+            <span>Manage Bookings</span>
           </button>
-          <div className="flex items-center gap-2 mb-1 px-2 py-1 bg-blue-100 text-blue-700 font-semibold rounded cursor-pointer transition-colors duration-200 w-full text-left">
-            <FaRegCheckSquare className="text-lg" /><span>Booking History</span>
+          <div
+            className="flex items-center gap-2 mb-1 px-2 py-1 bg-blue-100 text-blue-700 font-semibold rounded cursor-pointer transition-colors duration-200 w-full text-left"
+          >
+            <FaRegCheckSquare className="text-lg" />
+            <span>Booking History</span>
           </div>
-          <div className="flex items-center gap-2 mt-2 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200" onClick={() => navigate('/earning-dashboard')}>
-            <FaTrophy className="text-lg" /><span>Earnings Dashboard</span>
+          <div
+            className="flex items-center gap-2 mt-2 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200"
+            onClick={() => navigate('/earning-dashboard')}
+          >
+            <FaTrophy className="text-lg" />
+            <span>Earnings Dashboard</span>
+          </div>
+          {/* Request Refund below Earnings Dashboard */}
+          <div
+            className="flex items-center gap-2 mt-2 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200"
+            onClick={() => navigate('/refund-request')}
+          >
+            <FaRegFolderOpen className="text-lg" />
+            <span>Request Refund</span>
           </div>
           <hr className="my-4 border-gray-300" />
         </nav>
@@ -114,7 +144,7 @@ export default function BookingHistory() {
               navigate("/carwash-login");
             }}
           >
-            Logout
+            <FaRegFolderOpen className="text-lg" /> Logout
           </button>
         </div>
       </aside>

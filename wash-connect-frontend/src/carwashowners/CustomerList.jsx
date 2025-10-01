@@ -62,6 +62,7 @@ function CustomerList() {
       (c.customer_name || "").toLowerCase().includes(search.toLowerCase()) ||
       (c.email || "").toLowerCase().includes(search.toLowerCase())
     )
+    .filter(c => c.status !== "Blocked") // <-- Remove blocked customers
     .sort((a, b) => {
       if (sort === "date") return new Date(b.latest_booking) - new Date(a.latest_booking);
       if (sort === "name") return (a.customer_name || "").localeCompare(b.customer_name || "");
@@ -73,6 +74,9 @@ function CustomerList() {
     localStorage.removeItem("token");
     navigate("/carwash-login");
   };
+
+  const totalNewCustomers = customers.filter(c => c.status === "New Customer").length;
+  const totalRepeatCustomers = customers.filter(c => c.status === "Repeat Customer").length;
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -97,12 +101,6 @@ function CustomerList() {
         </div>
         {/* Navigation */}
         <nav className="flex-1 px-4 space-y-2">
-          <div className="flex items-center justify-between mb-2 hover:bg-gray-100 px-2 py-1 rounded cursor-pointer transition-colors duration-200">
-            <span className="flex items-center gap-2 text-gray-700">
-              <FaRegEnvelope className="text-lg" /> Inbox
-            </span>
-            <span className="text-xs text-gray-700">24</span>
-          </div>
           <button
             className="w-full flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-100 cursor-pointer transition-colors duration-200"
             onClick={() => navigate("/carwash-dashboard")}
@@ -138,6 +136,11 @@ function CustomerList() {
           <div className="flex items-center gap-2 mt-2 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200" onClick={() => navigate('/earning-dashboard')}>
             <FaTrophy className="text-lg" />
             <span>Earnings Dashboard</span>
+          </div>
+          {/* Request Refund should be here, below Earnings Dashboard */}
+          <div className="flex items-center gap-2 mt-2 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer transition-colors duration-200" onClick={() => navigate('/refund-request')}>
+            <FaRegFolderOpen className="text-lg" />
+            <span>Request Refund</span>
           </div>
           <hr className="my-4 border-gray-300" /> 
         </nav>
@@ -177,26 +180,18 @@ function CustomerList() {
           </div>
           <div className="flex gap-4 mt-2">
             <div className="bg-blue-50 border border-blue-200 rounded-lg px-6 py-3 flex flex-col items-center">
-              <span className="text-2xl font-bold">{customers.length}</span>
+              <span className="text-2xl font-bold">
+                {customers.filter(c => c.status !== "Blocked").length}
+              </span>
               <span className="text-xs text-gray-500">Total Customer</span>
             </div>
             <div className="bg-blue-50 border border-blue-200 rounded-lg px-6 py-3 flex flex-col items-center">
-              <span className="text-2xl font-bold">
-                {customers.filter(c => c.status === "New Customer").length}
-              </span>
+              <span className="text-2xl font-bold">{totalNewCustomers}</span>
               <span className="text-xs text-gray-500">New Customer</span>
             </div>
             <div className="bg-blue-50 border border-blue-200 rounded-lg px-6 py-3 flex flex-col items-center">
-              <span className="text-2xl font-bold">
-                {customers.filter(c => c.status === "Repeat Customer").length}
-              </span>
+              <span className="text-2xl font-bold">{totalRepeatCustomers}</span>
               <span className="text-xs text-gray-500">Repeat Customer</span>
-            </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg px-6 py-3 flex flex-col items-center">
-              <span className="text-2xl font-bold">
-                {customers.filter(c => c.status === "Blocked").length}
-              </span>
-              <span className="text-xs text-gray-500">Blocked Customer</span>
             </div>
           </div>
         </div>
