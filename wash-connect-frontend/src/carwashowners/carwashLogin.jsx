@@ -131,6 +131,16 @@ function CarwashLogin() {
               {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
           </div>
+          {/* Forgotten password link */}
+          <div className="flex justify-end mb-2">
+            <button
+              type="button"
+              className="text-cyan-600 hover:underline text-sm font-medium"
+              onClick={() => navigate("/forgot-password")}
+            >
+              Forgot password?
+            </button>
+          </div>
           {error && (
             <div className="text-red-500 text-center font-medium">{error}</div>
           )}
