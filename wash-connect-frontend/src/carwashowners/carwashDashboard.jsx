@@ -897,5 +897,6 @@ export default function CarwashDashboard() {
 	);
 }
 
+
 // Helper to get a booking's appointment id regardless of field name differences
 const getAppointmentId = (b) => b?.appointment_id ?? b?.appointmentId ?? b?.id ?? null;
