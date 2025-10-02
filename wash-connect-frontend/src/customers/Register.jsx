@@ -6,13 +6,13 @@ function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
-    firstName: "Kyle",
-    lastName: "Dungog",
-    email: "kyle@gmail.com",
+    firstName: "",
+    lastName: "",
+    email: "",
     password: "",
     confirmPassword: "",
-    phone: "+63 994 906 6002",
-    location: "Dapitan, Cordova, Cebu",
+    phone: "",
+    location: "",
     gender: "",
     birthDate: "",
     agreeToTerms: false,

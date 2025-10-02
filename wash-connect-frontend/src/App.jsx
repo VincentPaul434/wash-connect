@@ -37,6 +37,7 @@ import Feedback from './customers/feedback';
 import RefundRequest from './carwashowners/refundRequest';
 import ShopBanned from './carwashowners/shopbanned'; // <-- Fix import name
 import ForgotPassword from './forgotPassword'; // <-- Fix import path
+import PasswordReset from './passwordReset';
 
 function App() {
     return (
@@ -84,6 +85,9 @@ function App() {
                 <Route path="/admin-application-requests" element={<AdminApplicationRequests />} />
                 <Route path="/admin-customer-management" element={<AdminUserManagement />} />
                 <Route path="/admin-carwash-management" element={<AdminCarwashManagement />} />
+
+                <Route path="/password-reset" element={<PasswordReset />} />
+
             </Routes>
         </Router>
     );

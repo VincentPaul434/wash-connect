@@ -24,7 +24,8 @@ const serviceRoutes = require('./routes/service');
 const bookingRoutes = require('./routes/booking');
 const refundRoutes = require('./routes/refund'); // Add this line
 const reviewsRoutes = require('./routes/reviews'); // Add this line
-
+const forgotPasswordRoutes = require('./routes/forgotpassword'); // Add this line
+const resetPasswordRoutes = require('./routes/resetpassword'); // Add this line
 
 const app = express();
 const path = require('path');
@@ -51,7 +52,8 @@ app.use('/api/services', serviceRoutes);
 app.use('/api', bookingRoutes);
 app.use('/api/refunds', refundRoutes); // Add this line
 app.use('/api', reviewsRoutes); // Add this line
-
+app.use('/api/forgot-password', forgotPasswordRoutes); // Add this line
+app.use('/api/reset-password', resetPasswordRoutes); // Add this line
 
 //admin
 app.use('/api/admin', adminRegisterRoutes);

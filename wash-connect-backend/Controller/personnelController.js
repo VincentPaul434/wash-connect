@@ -1,6 +1,7 @@
 const pool = require('../db');
 const multer = require("multer");
 const path = require("path");
+const nodemailer = require("nodemailer");
 
 // Configure multer for avatar uploads
 const storage = multer.diskStorage({
@@ -12,6 +13,14 @@ const storage = multer.diskStorage({
   },
 });
 const upload = multer({ storage });
+
+const transporter = nodemailer.createTransport({
+  service: "gmail", // or your provider
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
 exports.getPersonnelByOwner = async (req, res) => {
   const { ownerId } = req.params;
